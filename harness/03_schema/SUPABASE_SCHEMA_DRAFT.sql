@@ -1,0 +1,15 @@
+-- Supabase schema draft placeholder
+
+-- profiles
+-- channels
+-- places
+-- captures
+-- datasets
+-- dataset_features
+-- layers
+-- projects
+-- project_items
+-- stop_cameras
+-- content_blocks
+-- publications
+-- internal_agent_drafts
