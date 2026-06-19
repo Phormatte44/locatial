@@ -1,24 +1,25 @@
 /** @type {import('tailwindcss').Config} */
-// Tokens carry the documented LOCATIAL design system (docs/DESIGN-SYSTEM.md).
-// Kept minimal + semantic — the visual identity is intentionally replaceable.
+// Tokens matched to the live locatial.io look: dark #131313, violet #6211DC accent,
+// geometric sans (Gilroy on the real site → Poppins here as the closest free match).
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
-        signal: '#FF2D7A',
-        'signal-dim': '#FF2D7ACC',
-        night: '#0a0a0b',
-        root: '#000000',
-        surface1: '#111111',
-        surface2: '#1a1a1a',
-        'gray-hi': '#555555',
-        'gray-mid': '#999999',
-        'gray-lo': '#bbbbbb',
-        'gray-rule': '#333333',
+        signal: '#6211DC',
+        'signal-dim': '#6211DCCC',
+        night: '#131313',
+        root: '#0e0e0e',
+        surface1: '#1b1b1b',
+        surface2: '#242424',
+        'gray-hi': '#6b6b6b',
+        'gray-mid': '#8a8a8a',
+        'gray-lo': '#b6b6b6',
+        'gray-rule': '#2c2c2c',
+        chalk: '#f2f2f2',
       },
       fontFamily: {
-        sans: ['Manrope', 'system-ui', 'sans-serif'],
+        sans: ['Poppins', 'Gilroy', 'system-ui', 'sans-serif'],
       },
     },
   },

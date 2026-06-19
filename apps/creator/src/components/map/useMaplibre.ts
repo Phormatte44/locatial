@@ -20,7 +20,7 @@ export function useMaplibre(opts?: {
       style: MAP_STYLE,
       center: opts?.center ?? [-0.1278, 51.5074],
       zoom: opts?.zoom ?? 12,
-      pitch: 45,
+      pitch: 60,
       bearing: -10,
       interactive: opts?.interactive ?? true,
       attributionControl: false,
@@ -59,9 +59,9 @@ export function stylePin(el: HTMLElement, active: boolean, dimmed = false) {
   el.style.zIndex = active ? '10' : '1'
   if (active) {
     label.style.cssText =
-      'color:#FF2D7A;font-size:11px;font-weight:800;white-space:nowrap;margin-bottom:5px;text-shadow:0 0 12px rgba(255,45,122,0.6);'
+      'color:#a06bff;font-size:11px;font-weight:800;white-space:nowrap;margin-bottom:5px;text-shadow:0 0 12px rgba(98,17,220,0.7);'
     pillar.style.cssText =
-      'width:10px;height:60px;border-radius:5px;background:linear-gradient(135deg,#ff6aab 0%,#FF2D7A 40%,#cc1a5e 100%);box-shadow:0 0 18px rgba(255,45,122,0.7),0 2px 8px rgba(0,0,0,0.4);'
+      'width:10px;height:60px;border-radius:5px;background:linear-gradient(135deg,#a06bff 0%,#6211DC 45%,#3f0a90 100%);box-shadow:0 0 18px rgba(98,17,220,0.75),0 2px 8px rgba(0,0,0,0.4);'
   } else {
     label.style.cssText =
       'color:#888;font-size:10px;font-weight:700;white-space:nowrap;margin-bottom:4px;'

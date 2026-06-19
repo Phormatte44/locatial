@@ -12,10 +12,15 @@ export type CameraMove = {
   bearing: number
   mode: 'fly-to' | 'ease-to' | 'jump-to'
   duration: number
+  /** Mapbox/MapLibre flyTo tuning, matched to locatial.io (speed 0.6, curve 1.8). */
+  speed: number
+  curve: number
 }
 
-// Documented defaults (DESIGN-SYSTEM.md): bar/stop view pitch 45–50°, bearing −10°.
-const DEFAULTS = { zoom: 15.5, pitch: 45, bearing: -10 }
+// Defaults matched to locatial.io's PlayceList camera: pitched 3D view, slight bearing.
+const DEFAULTS = { zoom: 13, pitch: 60, bearing: -10 }
+// locatial.io uses Mapbox flyTo({ speed: 0.6, curve: 1.8 }) for every place transition.
+const FLY = { speed: 0.6, curve: 1.8 }
 
 /** Great-circle distance in metres between two [lng,lat] points. */
 export function haversineMeters(a: LngLat, b: LngLat): number {
@@ -35,12 +40,11 @@ function chapterLngLat(c: Pick<Chapter, 'longitude' | 'latitude'>): LngLat | nul
 }
 
 /**
- * Decide the camera move when the active chapter changes.
- * - reducedMotion → instant jump-to.
- * - no previous location → ease into the target.
- * - near (< 600m) → restrained local easeTo (keep zoom in close).
- * - far → broad flyTo that pulls back to frame the journey then settles.
- * Explicit per-chapter `camera` intent overrides the derived zoom/pitch/bearing.
+ * Decide the camera move when the active chapter changes — matched to locatial.io,
+ * which uses a single Mapbox `flyTo({ speed: 0.6, curve: 1.8 })` for every transition,
+ * with each place's own pitch / bearing / zoom (from the CMS, stored in chapter.camera).
+ * Reduced-motion → instant jump-to. The flight auto-scales its duration by distance via
+ * the speed/curve parameters, so near hops are quick and far ones sweep out and back.
  */
 export function directCamera(opts: {
   to: Pick<Chapter, 'longitude' | 'latitude' | 'camera'>
@@ -56,25 +60,12 @@ export function directCamera(opts: {
     zoom: intent.zoom ?? DEFAULTS.zoom,
     pitch: intent.pitch ?? DEFAULTS.pitch,
     bearing: intent.bearing ?? DEFAULTS.bearing,
+    ...FLY,
   }
 
   if (opts.reducedMotion) {
     return { ...base, mode: 'jump-to', duration: 0 }
   }
-
-  const fromLngLat = opts.from ? chapterLngLat(opts.from) : null
-  if (!fromLngLat) {
-    return { ...base, mode: 'ease-to', duration: 600 }
-  }
-
-  const dist = haversineMeters(fromLngLat, target)
-  if (dist < 600) {
-    // Restrained local movement for nearby places.
-    return { ...base, zoom: intent.zoom ?? 16, mode: 'ease-to', duration: 500 }
-  }
-
-  // Broader movement for distant places: zoom out a touch, longer flight.
-  const farZoom = intent.zoom ?? (dist > 5000 ? 12.5 : 14)
-  const duration = Math.min(2200, 900 + dist / 6)
-  return { ...base, zoom: farZoom, mode: 'fly-to', duration }
+  // flyTo with speed/curve drives the timing; duration:0 lets the lib compute it.
+  return { ...base, mode: 'fly-to', duration: 0 }
 }

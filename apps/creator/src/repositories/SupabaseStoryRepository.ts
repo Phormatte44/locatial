@@ -42,20 +42,25 @@ export class SupabaseStoryRepository implements StoryRepository {
   }
 
   async listPublishedStories() {
+    // Pull each story's chapters' images (ordered) so we can show a cover + count.
     const { data, error } = await this.db
       .from('stories')
-      .select('id,title,slug,published_at,chapters(count)')
+      .select('id,title,slug,published_at,chapters(image_url,position)')
       .eq('status', 'published')
       .order('published_at', { ascending: false })
     this.throwIf(error, 'listPublishedStories')
-    return (data ?? []).map((r: any) => ({
-      id: r.id,
-      title: r.title ?? '',
-      slug: r.slug,
-      chapterCount: r.chapters?.[0]?.count ?? 0,
-      coverImage: null,
-      publishedAt: r.published_at,
-    }))
+    return (data ?? []).map((r: any) => {
+      const chs = (r.chapters ?? []).slice().sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
+      const cover = chs.find((c: any) => c.image_url)?.image_url ?? null
+      return {
+        id: r.id,
+        title: r.title ?? '',
+        slug: r.slug,
+        chapterCount: chs.length,
+        coverImage: cover,
+        publishedAt: r.published_at,
+      }
+    })
   }
 
   async createStory(title: string): Promise<Story> {

@@ -21,24 +21,19 @@ describe('cameraDirector', () => {
     expect(m?.duration).toBe(0)
   })
 
-  it('uses a restrained ease for nearby places', () => {
-    const to = { longitude: here.longitude + 0.002, latitude: here.latitude, camera: null }
-    const m = directCamera({ to, from: here })
-    expect(m?.mode).toBe('ease-to')
-    expect(m?.zoom).toBe(16)
-  })
-
-  it('uses a broad flyTo for distant places', () => {
+  it('flies between places with locatial.io speed/curve', () => {
     const to = { longitude: here.longitude + 0.2, latitude: here.latitude + 0.2, camera: null }
     const m = directCamera({ to, from: here })
     expect(m?.mode).toBe('fly-to')
-    expect(m!.zoom).toBeLessThan(15)
+    expect(m?.speed).toBe(0.6)
+    expect(m?.curve).toBe(1.8)
   })
 
-  it('honours explicit camera intent', () => {
+  it('honours explicit camera intent (pitch/bearing/zoom)', () => {
     const m = directCamera({ to: { ...here, camera: { zoom: 18, pitch: 30, bearing: 90 } }, from: here })
     expect(m?.zoom).toBe(18)
     expect(m?.pitch).toBe(30)
     expect(m?.bearing).toBe(90)
+    expect(m?.mode).toBe('fly-to')
   })
 })

@@ -16,9 +16,9 @@ body,
 }
 
 body {
-  font-family: 'Manrope', system-ui, sans-serif;
-  background: #000;
-  color: #e8e8f0;
+  font-family: 'Poppins', 'Gilroy', system-ui, sans-serif;
+  background: #131313;
+  color: #b6b6b6;
 }
 
 /* Hide MapLibre chrome we credit elsewhere. */

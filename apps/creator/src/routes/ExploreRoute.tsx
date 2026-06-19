@@ -1,8 +1,34 @@
-// ExploreRoute — public consumer page ("/explore"). Lists every PUBLISHED story so a
-// visitor (citizen) can browse and open them. No login required.
+// ExploreRoute — public consumer home ("/"). Lists published PlayceLists (stories) so a
+// visitor can browse and open them. No login. Styled to match locatial.io (dark + violet,
+// hamburger menu + LOCATIAL wordmark, place-count cards).
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getStoryRepository, type PublishedStorySummary } from '../repositories'
+
+function MenuButton() {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="relative">
+      <button
+        aria-label="Menu"
+        onClick={() => setOpen((v) => !v)}
+        className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-rule bg-surface1 text-chalk hover:border-signal"
+      >
+        <span className="text-lg leading-none">☰</span>
+      </button>
+      {open && (
+        <div className="absolute left-0 z-30 mt-2 w-48 overflow-hidden rounded-xl border border-gray-rule bg-surface1 shadow-2xl">
+          <Link to="/" className="block px-4 py-2.5 text-sm font-semibold text-chalk hover:bg-surface2" onClick={() => setOpen(false)}>
+            Browse PlayceLists
+          </Link>
+          <Link to="/studio" className="block px-4 py-2.5 text-sm font-semibold text-chalk hover:bg-surface2" onClick={() => setOpen(false)}>
+            Creator Studio →
+          </Link>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export function ExploreRoute() {
   const [stories, setStories] = useState<PublishedStorySummary[] | null>(null)
@@ -20,48 +46,51 @@ export function ExploreRoute() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-root text-chalk">
-      <header className="flex items-center justify-between border-b border-gray-rule bg-night px-5 py-4">
-        <div>
-          <h1 className="text-xl font-extrabold">LOCATIAL</h1>
-          <p className="text-sm text-gray-mid">Browse published stories</p>
-        </div>
+    <div className="min-h-screen bg-night text-chalk">
+      <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-gray-rule bg-night/95 px-5 py-3 backdrop-blur">
+        <MenuButton />
+        <div className="text-lg font-extrabold uppercase tracking-[0.35em] text-chalk">LOCATIAL</div>
         <Link
           to="/studio"
-          className="rounded-lg border border-gray-rule bg-surface2 px-3 py-2 text-xs font-bold text-chalk hover:border-signal"
+          className="ml-auto rounded-lg bg-signal px-3 py-2 text-xs font-bold text-white hover:brightness-110"
         >
           Creator Studio →
         </Link>
       </header>
 
-      <div className="mx-auto max-w-3xl px-5 py-6">
+      <div className="mx-auto max-w-5xl px-5 py-6">
+        <h1 className="mb-1 text-2xl font-extrabold tracking-tight text-chalk">PlayceLists</h1>
+        <p className="mb-6 text-sm text-gray-mid">Spatial stories you can explore on the map.</p>
+
         {error && <div className="mb-4 text-sm text-red-400">{error}</div>}
         {!stories && !error && <div className="text-sm text-gray-mid">Loading…</div>}
         {stories && stories.length === 0 && (
-          <div className="rounded-lg border border-gray-rule bg-surface1 p-6 text-center text-sm text-gray-mid">
-            No published stories yet.
+          <div className="rounded-2xl border border-gray-rule bg-surface1 p-8 text-center text-sm text-gray-mid">
+            No published PlayceLists yet.
           </div>
         )}
 
-        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {(stories ?? []).map((s) => (
             <li key={s.id}>
               <Link
                 to={`/story/${s.slug}`}
-                className="block overflow-hidden rounded-xl border border-gray-rule bg-surface1 transition hover:border-signal"
+                className="group block overflow-hidden rounded-2xl border border-gray-rule bg-surface1 transition hover:border-signal"
               >
                 {s.coverImage ? (
-                  <img src={s.coverImage} alt="" className="aspect-[16/9] w-full object-cover" />
+                  <img src={s.coverImage} alt="" className="aspect-[4/3] w-full object-cover" />
                 ) : (
-                  <div className="flex aspect-[16/9] w-full items-center justify-center bg-surface2 text-xs text-gray-hi">
+                  <div className="flex aspect-[4/3] w-full items-center justify-center bg-surface2 text-sm font-bold uppercase tracking-[0.3em] text-gray-hi">
                     LOCATIAL
                   </div>
                 )}
-                <div className="p-3">
-                  <div className="font-bold text-chalk">{s.title || 'Untitled story'}</div>
-                  <div className="mt-0.5 text-xs text-gray-mid">
-                    {s.chapterCount} {s.chapterCount === 1 ? 'chapter' : 'chapters'}
-                    {s.publishedAt ? ` · ${new Date(s.publishedAt).toLocaleDateString()}` : ''}
+                <div className="p-4">
+                  <div className="text-base font-bold text-chalk group-hover:text-signal">{s.title || 'Untitled'}</div>
+                  <div className="mt-1 flex items-baseline gap-1.5">
+                    <span className="text-lg font-extrabold text-signal">{s.chapterCount}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-mid">
+                      {s.chapterCount === 1 ? 'place' : 'places'}
+                    </span>
                   </div>
                 </div>
               </Link>

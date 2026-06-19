@@ -58,10 +58,11 @@ export function ReaderMap({ chapters, activeIndex, reducedMotion }: Props) {
     prevIndexRef.current = activeIndex
     const move = directCamera({ to, from, reducedMotion })
     if (!move) return
-    const opts = { center: move.center, zoom: move.zoom, pitch: move.pitch, bearing: move.bearing, duration: move.duration }
-    if (move.mode === 'jump-to') map.jumpTo(opts)
-    else if (move.mode === 'fly-to') map.flyTo(opts)
-    else map.easeTo(opts)
+    const base = { center: move.center, zoom: move.zoom, pitch: move.pitch, bearing: move.bearing }
+    if (move.mode === 'jump-to') map.jumpTo(base)
+    // Match locatial.io: flyTo with speed + curve (duration auto-derived from distance).
+    else if (move.mode === 'fly-to') map.flyTo({ ...base, speed: move.speed, curve: move.curve, essential: true })
+    else map.easeTo({ ...base, duration: move.duration })
   }, [activeIndex, chapters, ready, reducedMotion, mapRef])
 
   return <div ref={containerRef} className="h-full w-full" data-testid="reader-map" />
