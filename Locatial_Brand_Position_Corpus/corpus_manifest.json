@@ -1,6 +1,6 @@
 {
   "name": "Locatial Brand and Position Corpus",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "created": "2026-06-19",
   "documents": [
     "00_START_HERE.md",
@@ -17,11 +17,13 @@
     "09_PRDs/01_NIGHTLIFE_INTELLIGENCE_MICRO_PRD.md",
     "10_Prototype_Implementation/01_NYC_GUIDE_PROTOTYPE_BRIEF.md",
     "99_Governance/CHANGELOG.md",
+    "99_Governance/DATABASE_CHANGE_PROTOCOL.md",
     "99_Governance/OPEN_QUESTIONS.md",
     "99_Governance/REPO_SETUP.md",
     "99_Governance/SOURCE_OF_TRUTH.md",
     "CLAUDE.md",
-    "CORPUS_MAP.md"
+    "CORPUS_MAP.md",
+    "corpus_manifest.json"
   ],
   "primary_entrypoint": "00_START_HERE.md",
   "ai_instruction": "CLAUDE.md"

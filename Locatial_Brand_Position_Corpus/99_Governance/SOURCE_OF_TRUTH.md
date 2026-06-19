@@ -24,6 +24,7 @@ When documents conflict, use this order:
 - Nightlife layers: `07_Nightlife_Intelligence/01_SPATIAL_CHARACTER_LAYERS.md`
 - Evidence: `08_Data_Acquisition_Evidence/01_ACQUISITION_AND_CONFIDENCE.md`
 - Build scope: `09_PRDs/01_NIGHTLIFE_INTELLIGENCE_MICRO_PRD.md`
+- Database preservation: `99_Governance/DATABASE_CHANGE_PROTOCOL.md`
 
 ## Change rule
 

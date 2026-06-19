@@ -7,3 +7,4 @@
 - Established `CLAUDE.md` as the AI operating instruction.
 - Established source-of-truth and change-control rules.
 - Defined the initial five NYC nightlife layers.
+- Added mandatory restore-point, checkpoint, rollback and non-destructive Supabase/database extension rules.

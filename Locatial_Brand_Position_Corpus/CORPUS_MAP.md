@@ -15,6 +15,7 @@
 | How do nightlife heatmaps work? | `07_Nightlife_Intelligence/01_SPATIAL_CHARACTER_LAYERS.md` |
 | How is the data acquired reliably? | `08_Data_Acquisition_Evidence/01_ACQUISITION_AND_CONFIDENCE.md` |
 | What exactly must be built? | `09_PRDs/01_NIGHTLIFE_INTELLIGENCE_MICRO_PRD.md` |
+| How must database changes be protected? | `99_Governance/DATABASE_CHANGE_PROTOCOL.md` |
 | How should the first prototype be executed? | `10_Prototype_Implementation/01_NYC_GUIDE_PROTOTYPE_BRIEF.md` |
 
 ## Dependency flow
