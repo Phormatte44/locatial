@@ -13,10 +13,11 @@ urgency.
    account + SMTP creds from Michael.)
 
 ## B. Project hygiene
-3. **Initialize git + push to `Phormatte44/locatial`?** The repo is currently NOT under
-   version control — the only rollback points are Vercel deployment URLs. Recommend
-   `git init`, commit, and push so there's real history + the work lands in the named repo.
-   Confirm the remote/branch and that pushing is wanted.
+3. ✅ **DONE (2026-06-19): git + GitHub.** App is committed and pushed to
+   `Phormatte44/locatial` under `apps/creator/`; the monorepo is the single local source of
+   truth at `~/Claude/may/locatial`. Remaining sub-item: **Michael must flip the repo from
+   public → private** (Settings → Danger Zone). Also consider branch protection / a real
+   branching workflow (currently committing straight to `main`).
 4. **Adopt the Supabase CLI migration flow?** SQL is currently applied by hand in the
    dashboard. Worth wiring `supabase/migrations` properly? (Needs the service-role / DB
    connection, which the agent has not had.)

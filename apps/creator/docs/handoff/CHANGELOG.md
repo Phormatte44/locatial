@@ -2,6 +2,18 @@
 
 Reverse-chronological. Dates are when the work happened.
 
+## 2026-06-19 (later) — GitHub + monorepo consolidation
+- `git init` + first commit of the standalone app, then discovered `Phormatte44/locatial` is
+  a real **monorepo** (PRDs, brand corpus, `harness/`, `apps/`, `packages/`, `prototypes/`).
+- Placed the app under **`apps/creator/`** (per that folder's README), additive commit on top
+  of `v2` — nothing of Michael's overwritten. Pushed to `main`.
+- **Consolidated to one source of truth:** moved the Vercel link + `.env.local` into
+  `apps/creator`, re-deployed from there (live URL unchanged), then **removed the standalone
+  `~/Claude/may/locatial` duplicate** and renamed the monorepo clone to `~/Claude/may/locatial`.
+  Updated the workspace dev launch path to `apps/creator`.
+- Push auth via macOS keychain (token not stored in the repo). Repo still **public** — pending
+  Michael flipping it to Private.
+
 ## 2026-06-19
 ### Citizen experience restructure (current)
 - Made the **public browse page the home (`/`)**; moved Creator Studio to **`/studio`**

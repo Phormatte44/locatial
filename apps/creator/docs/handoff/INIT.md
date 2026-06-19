@@ -1,5 +1,10 @@
 # START HERE — new agent / new chat
 
+> **Location (updated 2026-06-19):** this app is in the `Phormatte44/locatial` **monorepo**
+> at **`/Users/michaelmccann/Claude/may/locatial/apps/creator`**. It's on GitHub; `git push`
+> from the repo works (token in macOS keychain). Vercel deploys from `apps/creator`.
+> `cd /Users/michaelmccann/Claude/may/locatial/apps/creator && npm install` before running.
+
 You are taking over the **LOCATIAL** build from a previous agent. Read these three files
 in order, then you're ready:
 

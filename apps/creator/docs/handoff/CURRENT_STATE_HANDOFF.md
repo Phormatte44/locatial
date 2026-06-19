@@ -1,6 +1,16 @@
 # CURRENT STATE — Handoff
 
-_Snapshot: 2026-06-19. Project: LOCATIAL. Repo: `/Users/michaelmccann/Claude/may/locatial`._
+_Snapshot: 2026-06-19._
+
+> **UPDATE 2026-06-19 (consolidation):** The app now lives in the **`Phormatte44/locatial`
+> monorepo** under **`apps/creator/`**. Canonical local path:
+> **`/Users/michaelmccann/Claude/may/locatial/apps/creator`** (repo root = the monorepo at
+> `/Users/michaelmccann/Claude/may/locatial`). It **is now under git + on GitHub** — the
+> "not a git repo" / "no git history" notes further down are SUPERSEDED. Vercel deploys from
+> `apps/creator` (`cd apps/creator && vercel deploy --prod`). The old standalone
+> `~/Claude/may/locatial` duplicate was removed (single source of truth). Repo is still
+> **PUBLIC → Michael to flip to Private** (Settings → Danger Zone). Run `npm install` inside
+> `apps/creator` before `npm run dev`.
 
 ---
 
