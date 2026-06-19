@@ -8,6 +8,7 @@ export default {
       colors: {
         signal: '#6211DC',
         'signal-dim': '#6211DCCC',
+        lime: '#c8f000',
         night: '#131313',
         root: '#0e0e0e',
         surface1: '#1b1b1b',

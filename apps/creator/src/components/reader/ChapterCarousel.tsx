@@ -125,12 +125,20 @@ export function ChapterCarousel({ chapters, sections, activeIndex, onIndexChange
           className="reader-track"
           style={{ width: `${chapters.length * 100}%`, transform: `translateX(-${(activeIndex * 100) / chapters.length}%)` }}
         >
-          {chapters.map((c) => (
+          {chapters.map((c, i) => (
             <div key={c.id} style={{ width: `${100 / chapters.length}%` }} className="h-full">
-              <ChapterSlide chapter={c} section={c.sectionId ? sectionById.get(c.sectionId) : null} />
+              <ChapterSlide chapter={c} index={i} total={chapters.length} />
             </div>
           ))}
         </div>
+      </div>
+
+      {/* lime progress bar (matches locatial.io) */}
+      <div className="h-1 w-full bg-gray-rule">
+        <div
+          className="h-full bg-lime transition-[width] duration-300"
+          style={{ width: `${((activeIndex + 1) / chapters.length) * 100}%` }}
+        />
       </div>
 
       <div className="flex items-center justify-between gap-2 border-t border-gray-rule bg-night px-3 py-2">

@@ -1,49 +1,48 @@
-// ChapterSlide — one chapter rendered as a vertically scrolling card.
-// Content order per brief: image → headline → body → tags/metadata.
-import type { Chapter, Section } from '../../domain/types'
-import { Badge } from '../ui/primitives'
+// ChapterSlide — one chapter as a vertically scrolling reader page (matches locatial.io):
+// hero image → lime chapter label + "n / total" → headline → structured blocks.
+import type { Chapter } from '../../domain/types'
+import { ChapterBlocks, parseBlocks } from './ChapterBlocks'
 
-export function ChapterSlide({ chapter, section }: { chapter: Chapter; section?: Section | null }) {
+export function ChapterSlide({
+  chapter,
+  index,
+  total,
+}: {
+  chapter: Chapter
+  index?: number
+  total?: number
+}) {
+  const blocks = parseBlocks(chapter.body)
   return (
     <div className="chapter-scroll bg-night" data-testid="chapter-slide">
-      <div className="mx-auto max-w-2xl px-4 pb-16 pt-3">
+      <div className="mx-auto max-w-2xl px-4 pb-20 pt-3">
         {chapter.imageUrl ? (
           <img
             src={chapter.imageUrl}
             alt={chapter.name}
-            className="mb-4 aspect-[4/3] w-full rounded-xl object-cover"
+            className="mb-4 aspect-[4/3] w-full rounded-2xl object-cover"
             loading="lazy"
           />
         ) : (
-          <div className="mb-4 flex aspect-[4/3] w-full items-center justify-center rounded-xl bg-surface1 text-xs text-gray-hi">
+          <div className="mb-4 flex aspect-[4/3] w-full items-center justify-center rounded-2xl bg-surface1 text-xs text-gray-hi">
             No image
           </div>
         )}
 
-        {section && (
-          <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-signal">{section.name}</div>
+        <div className="flex items-baseline justify-between gap-3">
+          <div className="text-sm font-bold text-lime">{chapter.name || 'Chapter'}</div>
+          {typeof index === 'number' && typeof total === 'number' && (
+            <div className="shrink-0 text-xs font-bold text-gray-mid">
+              {index + 1} <span className="text-gray-hi">/{total}</span>
+            </div>
+          )}
+        </div>
+
+        {chapter.headline && (
+          <h2 className="mb-3 mt-1 text-xl font-extrabold leading-tight text-chalk">{chapter.headline}</h2>
         )}
 
-        <h2 className="text-xl font-extrabold leading-tight text-chalk">{chapter.headline || chapter.name}</h2>
-        {chapter.name && chapter.headline && (
-          <div className="mt-0.5 text-sm font-bold text-gray-mid">{chapter.name}</div>
-        )}
-
-        {chapter.placeName && (
-          <div className="mt-2 text-[12px] text-gray-lo">📍 {chapter.placeName}</div>
-        )}
-
-        <p className="mt-3 whitespace-pre-wrap text-[15px] leading-relaxed text-gray-lo">{chapter.body}</p>
-
-        {chapter.tags.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-1.5">
-            {chapter.tags.map((t) => (
-              <Badge key={t} tone="muted">
-                {t}
-              </Badge>
-            ))}
-          </div>
-        )}
+        <ChapterBlocks blocks={blocks} />
       </div>
     </div>
   )
