@@ -1,0 +1,48 @@
+-- 0003_secure_rls.sql.example — the SECURE path once Supabase Auth is added.
+-- Rename to 0003_secure_rls.sql and run AFTER dropping the prototype policies (0002).
+-- Adds ownership and restricts writes to the authenticated owner. Public can read only
+-- published stories and their contents.
+
+-- 1. Ownership column ------------------------------------------------------
+alter table stories add column if not exists owner_id uuid references auth.users(id);
+
+-- 2. Drop prototype anon policies -----------------------------------------
+drop policy if exists stories_anon_all  on stories;
+drop policy if exists sections_anon_all on sections;
+drop policy if exists chapters_anon_all on chapters;
+
+-- 3. Public read of PUBLISHED content only --------------------------------
+create policy stories_public_read on stories
+  for select to anon, authenticated using (status = 'published');
+
+create policy sections_public_read on sections
+  for select to anon, authenticated using (
+    exists (select 1 from stories s where s.id = sections.story_id and s.status = 'published')
+  );
+
+create policy chapters_public_read on chapters
+  for select to anon, authenticated using (
+    exists (select 1 from stories s where s.id = chapters.story_id and s.status = 'published')
+  );
+
+-- 4. Owner full control over their own stories ----------------------------
+create policy stories_owner_all on stories
+  for all to authenticated using (owner_id = auth.uid()) with check (owner_id = auth.uid());
+
+create policy sections_owner_all on sections
+  for all to authenticated using (
+    exists (select 1 from stories s where s.id = sections.story_id and s.owner_id = auth.uid())
+  ) with check (
+    exists (select 1 from stories s where s.id = sections.story_id and s.owner_id = auth.uid())
+  );
+
+create policy chapters_owner_all on chapters
+  for all to authenticated using (
+    exists (select 1 from stories s where s.id = chapters.story_id and s.owner_id = auth.uid())
+  ) with check (
+    exists (select 1 from stories s where s.id = chapters.story_id and s.owner_id = auth.uid())
+  );
+
+-- Note: publishing (status -> 'published') should additionally be gated server-side
+-- (Edge Function / RPC with validation) so that "agents may create drafts but never
+-- publish" is enforced beyond the client. See publishService.ts.
