@@ -5,10 +5,11 @@
 > from the repo works (token in macOS keychain). Vercel deploys from `apps/creator`.
 > `cd /Users/michaelmccann/Claude/may/locatial/apps/creator && npm install` before running.
 
-You are taking over the **LOCATIAL** build from a previous agent. Read these three files
-in order, then you're ready:
+You are taking over the **LOCATIAL** build from a previous agent. Read in this order:
 
-1. **`CURRENT_STATE_HANDOFF.md`** — what exists, where, and how to run it. (Read first.)
+0. **`SESSION_HANDOVER_2026-06-19.md`** — ⭐ MOST CURRENT state + the active workstream
+   (Webflow→Supabase migration, pilot pending). **Read this first; it supersedes the rest.**
+1. **`CURRENT_STATE_HANDOFF.md`** — fuller background snapshot.
 2. **`CHANGELOG.md`** — how the project got to this state.
 3. **`OPEN_QUESTIONS.md`** — decisions waiting on Michael (the user).
 
