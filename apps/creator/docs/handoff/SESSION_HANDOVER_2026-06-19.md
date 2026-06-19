@@ -19,16 +19,22 @@ Michael's real locatial.io (Webflow) content into the app's Supabase DB**.
 - **Backend:** Supabase project `locatial-prototypes` (ref `snowiacdagibrxwhkzoi`), free tier
   (AUTO-PAUSES ~weekly → resume in dashboard if app looks empty).
 
-## ⛳ THE IMMEDIATE NEXT ACTION (in progress, waiting on Michael)
-We generated a **pilot import** of the locatial.io guide **"Best Music Venues in NYC"** and
-asked Michael to run it. **He has NOT confirmed it ran yet.**
-- Script: **`apps/creator/supabase/imports/best-music-venues-nyc.sql`** (committed/pushed).
-- Michael runs it in the Supabase **SQL editor** (it's a `do $$ … $$` block; bypasses RLS as
-  postgres). It inserts a published Story "Best Music Venues in NYC" (slug
-  `best-music-venues-in-nyc`), 2 sections (Manhattan/Brooklyn), 5 located chapters with
-  images + camera, owned by Michael's account.
-- **When he says "done":** verify it landed (see "verify" below) and that it shows in the
-  citizen library at `/`. Then proceed to the FULL migration (next section).
+## ⛳ MIGRATION DONE (2026-06-19) — what's next
+The locatial.io → Supabase migration is **complete**: all 14 Webflow collections imported →
+**16 published stories / 301 chapters** live (verified via anon API + visible at `/`). Done with
+`apps/creator/supabase/imports/rest_import.py` (service_role + REST). The pilot SQL
+(`best-music-venues-nyc.sql`) and `all-guides.sql` remain as artifacts.
+
+**Immediate follow-ups:**
+- 🔐 **Michael should ROTATE the `service_role` key** (he pasted it in chat; used once, never
+  stored) — Supabase → Settings → API Keys → Legacy → roll service_role. App uses anon, so
+  unaffected.
+- **Quality polish (optional):** big pin-collections (Banksy Maps, Twenty Largest Countries,
+  MM PhotoGeornal, A History…, Deadly Fates) have NO body text (the CMS had none) — they're
+  photo-map pins. Several stories have granular address-derived sections; re-run with
+  `rest_import.py --flat-sections` (or per-collection) to flatten if desired.
+- Then the original backlog: **visual design pass**, publish Google consent screen, repo→private,
+  custom SMTP.
 
 ---
 
@@ -65,6 +71,16 @@ cards (no `card----title`, e.g. the "A PlayceList Guide / About..." item).
 (`/tmp/loc_{0,100,200}.json` during the session — re-fetch fresh), filters one `collection`,
 escapes strings (double single-quotes), and emits a `do $$` block. Reuse the same approach to
 generate ONE big script for all place-based collections (one Story per `collection`).
+
+**That generator is now committed:** `apps/creator/supabase/imports/generate_import.py`
+(parameterized, output byte-for-byte matches the pilot). It fetches the full `Locations`
+collection itself given `WEBFLOW_TOKEN`, or reads pre-fetched JSON via `--from-json`. Flags:
+`--only "<collection>"` (repeatable), `--exclude`, `--status published|draft`,
+`--flat-sections`. Defaults: all collections except the editorial set (MM PhotoGeornal,
+News Room, Cocaine Chronicles, Radar), sections derived from the address (segment after the
+last comma → borough/country), one Chapter per Location, status published, each block
+re-runnable (`delete … where slug=…` first). Run e.g.:
+`WEBFLOW_TOKEN=xxxx python3 supabase/imports/generate_import.py > supabase/imports/all-guides.sql`
 
 **Decisions still needed for full migration (ask Michael):**
 - Which of the 14 to migrate (all? skip editorial ones like MM PhotoGeornal / News Room /
