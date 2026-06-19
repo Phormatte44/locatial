@@ -1,0 +1,28 @@
+{
+  "name": "Locatial Brand and Position Corpus",
+  "version": "0.1.0",
+  "created": "2026-06-19",
+  "documents": [
+    "00_START_HERE.md",
+    "01_Brand_Positioning/01_POSITIONING_PLATFORM.md",
+    "02_Verbal_Identity/01_VERBAL_IDENTITY.md",
+    "02_Verbal_Identity/02_PLACE_EDITORIAL_STYLE.md",
+    "03_Visual_Photographic_Identity/01_PHOTOGRAPHY_DIRECTION.md",
+    "04_NYC_Bars_Guide/01_GUIDE_PRODUCT_MODEL.md",
+    "04_NYC_Bars_Guide/02_PLACE_PAGE_CONTENT_ORDER.md",
+    "05_Editorial_Data_Model/01_PLACE_EDITORIAL_DATA_MODEL.md",
+    "06_Locatial_Graph/01_GRAPH_THESIS.md",
+    "07_Nightlife_Intelligence/01_SPATIAL_CHARACTER_LAYERS.md",
+    "08_Data_Acquisition_Evidence/01_ACQUISITION_AND_CONFIDENCE.md",
+    "09_PRDs/01_NIGHTLIFE_INTELLIGENCE_MICRO_PRD.md",
+    "10_Prototype_Implementation/01_NYC_GUIDE_PROTOTYPE_BRIEF.md",
+    "99_Governance/CHANGELOG.md",
+    "99_Governance/OPEN_QUESTIONS.md",
+    "99_Governance/REPO_SETUP.md",
+    "99_Governance/SOURCE_OF_TRUTH.md",
+    "CLAUDE.md",
+    "CORPUS_MAP.md"
+  ],
+  "primary_entrypoint": "00_START_HERE.md",
+  "ai_instruction": "CLAUDE.md"
+}
