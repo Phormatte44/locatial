@@ -35,6 +35,55 @@ body {
   overflow: visible !important;
 }
 
+/* Sphere ripple — emitted once when the camera arrives at a chapter. */
+.loc-sphere-ripple {
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  border: 1.5px solid #ff2d7a;
+  animation: loc-ripple 1.3s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes loc-ripple {
+  0%   { transform: scale(1);   opacity: 0.75; }
+  100% { transform: scale(4.5); opacity: 0; }
+}
+
+/* Chapter headline label — floats above the active sphere after arrival. */
+.loc-chapter-label {
+  position: relative;
+  max-width: 190px;
+  padding: 5px 10px;
+  background: #ffffff;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1.4;
+  text-align: center;
+  white-space: normal;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.16), 0 0 0 1px rgba(0,0,0,0.04);
+  animation: loc-label-in 0.35s ease both;
+  pointer-events: none;
+}
+/* Downward arrow pointing toward the sphere */
+.loc-chapter-label::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #ffffff;
+  border-bottom: none;
+}
+
+@keyframes loc-label-in {
+  from { opacity: 0; transform: translateY(-5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* Chapter pin marker (documented pill style). */
 .loc-pin {
   position: absolute;

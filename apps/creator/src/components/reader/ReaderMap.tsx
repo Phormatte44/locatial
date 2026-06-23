@@ -1,4 +1,4 @@
-// ReaderMap — sphere markers, great-circle arcs, animated chaser between chapters.
+// ReaderMap — sphere markers, arcs, chaser, cinematic arrival, territory footprint.
 import { useEffect, useRef } from 'react'
 import type { Chapter } from '../../domain/types'
 import { directCamera } from '../../domain/cameraDirector'
@@ -37,15 +37,12 @@ function styleSphere(el: HTMLElement, active: boolean) {
   if (active) {
     el.style.width = '14px'
     el.style.height = '14px'
-    el.style.opacity = '1'
     el.style.background = `radial-gradient(circle at 38% 38%, #ff8cb5, ${SIGNAL} 50%, #c4005a)`
     el.style.boxShadow = `0 0 0 3px rgba(255,45,122,0.25), 0 3px 10px rgba(255,45,122,0.5), 0 1px 3px rgba(0,0,0,0.3)`
     el.style.zIndex = '10'
   } else {
     el.style.width = '10px'
     el.style.height = '10px'
-    el.style.opacity = '1'
-    // White sphere with a gray ring — clearly distinct from the gray arc lines.
     el.style.background = '#ffffff'
     el.style.boxShadow = '0 0 0 2px rgba(130,144,160,0.65), 0 2px 6px rgba(0,0,0,0.12)'
     el.style.zIndex = '2'
@@ -67,6 +64,15 @@ function buildArcData(chapters: Chapter[]) {
   return { type: 'FeatureCollection' as const, features }
 }
 
+// Map chapter zoom → Nominatim admin detail level.
+function nomZoomFor(chapterZoom: number): number {
+  if (chapterZoom < 6)  return 3   // country
+  if (chapterZoom < 9)  return 5   // state / region
+  if (chapterZoom < 12) return 10  // city
+  if (chapterZoom < 15) return 14  // suburb / neighbourhood
+  return 16                        // district / street block
+}
+
 type Props = {
   chapters: Chapter[]
   activeIndex: number
@@ -81,13 +87,16 @@ export function ReaderMap({ chapters, activeIndex, reducedMotion, onChapterClick
     center: first ? [first.longitude!, first.latitude!] : undefined,
     zoom: 13,
   })
-  const markersRef = useRef<Map<string, maplibregl.Marker>>(new Map())
-  const prevIndexRef = useRef<number>(-1)
+  const markersRef    = useRef<Map<string, maplibregl.Marker>>(new Map())
+  const prevIndexRef  = useRef<number>(-1)
   const prevLngLatRef = useRef<LngLat | null>(null)
-  const chaserRef = useRef<maplibregl.Marker | null>(null)
-  const arcAnimRef = useRef<number | null>(null)
+  const chaserRef     = useRef<maplibregl.Marker | null>(null)
+  const arcAnimRef    = useRef<number | null>(null)
+  const labelMarkerRef = useRef<maplibregl.Marker | null>(null)
+  // Cache fetched footprint GeoJSON per chapter id to avoid repeat API calls.
+  const footprintCache = useRef<Map<string, object | null>>(new Map())
 
-  // Sphere markers — build/refresh on chapter or activeIndex change.
+  // ── Sphere markers ──────────────────────────────────────────────────────────
   useEffect(() => {
     const map = mapRef.current
     if (!map || !ready) return
@@ -115,34 +124,58 @@ export function ReaderMap({ chapters, activeIndex, reducedMotion, onChapterClick
     }
   }, [chapters, activeIndex, ready, mapRef])
 
-  // Arc source + layer — added once, data refreshed when chapters change.
+  // ── Arc + footprint GL sources / layers (added once) ────────────────────────
   useEffect(() => {
     const map = mapRef.current
     if (!map || !ready) return
-    const data = buildArcData(chapters)
+
+    // Arc lines between consecutive chapters.
+    const arcData = buildArcData(chapters)
     if (map.getSource('chapter-arcs')) {
-      (map.getSource('chapter-arcs') as maplibregl.GeoJSONSource).setData(data)
+      (map.getSource('chapter-arcs') as maplibregl.GeoJSONSource).setData(arcData)
     } else {
-      map.addSource('chapter-arcs', { type: 'geojson', data })
-      // Insert arc lines above hillshade/boundaries but below roads.
+      map.addSource('chapter-arcs', { type: 'geojson', data: arcData })
       map.addLayer(
         {
-          id: 'chapter-arc-lines',
-          type: 'line',
-          source: 'chapter-arcs',
+          id: 'chapter-arc-lines', type: 'line', source: 'chapter-arcs',
+          layout: { 'line-cap': 'round', 'line-join': 'round' },
+          paint: { 'line-color': '#8c9aaa', 'line-width': 1.2, 'line-opacity': 0.55 },
+        } as any, 'roads' // eslint-disable-line @typescript-eslint/no-explicit-any
+      )
+    }
+
+    // Territory footprint — filled when camera arrives, cleared on departure.
+    if (!map.getSource('chapter-footprint')) {
+      map.addSource('chapter-footprint', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      })
+      map.addLayer(
+        {
+          id: 'chapter-footprint-fill', type: 'fill', source: 'chapter-footprint',
+          paint: {
+            'fill-color': SIGNAL,
+            'fill-opacity': 0,
+            'fill-opacity-transition': { duration: 700, delay: 0 },
+          },
+        } as any, 'roads' // eslint-disable-line @typescript-eslint/no-explicit-any
+      )
+      map.addLayer(
+        {
+          id: 'chapter-footprint-stroke', type: 'line', source: 'chapter-footprint',
           layout: { 'line-cap': 'round', 'line-join': 'round' },
           paint: {
-            'line-color': '#8c9aaa',
-            'line-width': 1.2,
-            'line-opacity': 0.55,
+            'line-color': SIGNAL,
+            'line-width': 1.4,
+            'line-opacity': 0,
+            'line-opacity-transition': { duration: 700, delay: 0 },
           },
-        } as any,  // eslint-disable-line @typescript-eslint/no-explicit-any
-        'roads'
+        } as any, 'roads' // eslint-disable-line @typescript-eslint/no-explicit-any
       )
     }
   }, [chapters, ready, mapRef])
 
-  // Chaser marker — created once, animated along the arc during transitions.
+  // ── Chaser marker (created once) ────────────────────────────────────────────
   useEffect(() => {
     const map = mapRef.current
     if (!map || !ready) return
@@ -151,7 +184,6 @@ export function ReaderMap({ chapters, activeIndex, reducedMotion, onChapterClick
       'width:10px;height:10px;border-radius:50%;pointer-events:none;',
       `background:${SIGNAL};`,
       'box-shadow:0 0 0 6px rgba(255,45,122,0.2),0 0 16px 6px rgba(255,45,122,0.4);',
-      'transition:box-shadow 0.2s;',
     ].join('')
     const chaser = new maplibregl.Marker({ element: el, anchor: 'center' })
     chaserRef.current = chaser
@@ -162,7 +194,7 @@ export function ReaderMap({ chapters, activeIndex, reducedMotion, onChapterClick
     }
   }, [ready, mapRef])
 
-  // Camera movement + chaser animation — fires on activeIndex change.
+  // ── Camera + arrival effects ─────────────────────────────────────────────────
   useEffect(() => {
     const map = mapRef.current
     if (!map || !ready) return
@@ -170,7 +202,16 @@ export function ReaderMap({ chapters, activeIndex, reducedMotion, onChapterClick
     if (!to) return
 
     const isFirstMove = prevIndexRef.current < 0
+    const idx = activeIndex           // capture for closure
     prevIndexRef.current = activeIndex
+
+    // Fade out old footprint + remove old label at the start of every transition.
+    if (map.getLayer('chapter-footprint-fill')) {
+      map.setPaintProperty('chapter-footprint-fill',   'fill-opacity', 0)
+      map.setPaintProperty('chapter-footprint-stroke', 'line-opacity', 0)
+    }
+    labelMarkerRef.current?.remove()
+    labelMarkerRef.current = null
 
     const move = directCamera({ to, reducedMotion })
     if (!move) {
@@ -185,7 +226,7 @@ export function ReaderMap({ chapters, activeIndex, reducedMotion, onChapterClick
     } else {
       map.flyTo({ ...base, speed: move.speed, curve: move.curve, essential: true })
 
-      // Animate chaser along the arc from the previous chapter to this one.
+      // Chaser travels along the arc while the camera flies.
       const chaser = chaserRef.current
       if (chaser && prevLngLatRef.current && to.longitude != null && to.latitude != null) {
         const arc = greatCircle(prevLngLatRef.current, [to.longitude, to.latitude])
@@ -201,10 +242,85 @@ export function ReaderMap({ chapters, activeIndex, reducedMotion, onChapterClick
         }
         arcAnimRef.current = requestAnimationFrame(tick)
       }
+
+      // On arrival: ripple + cinematic orbit + headline label + territory footprint.
+      map.once('moveend', () => {
+        // Guard: user may have already navigated to a different chapter.
+        if (prevIndexRef.current !== idx) return
+
+        const chapter = chapters[idx]
+        if (!chapter?.longitude || !chapter?.latitude) return
+
+        // 1. Ripple pulse on the active sphere.
+        const activeMarker = markersRef.current.get(chapter.id)
+        if (activeMarker) {
+          const ripple = document.createElement('div')
+          ripple.className = 'loc-sphere-ripple'
+          activeMarker.getElement().appendChild(ripple)
+          setTimeout(() => ripple.remove(), 1500)
+        }
+
+        // 2. Cinematic orbit — slow 13° bearing sweep to reveal terrain depth.
+        map.easeTo({
+          bearing: map.getBearing() + 13,
+          duration: 3500,
+          easing: (t: number) => t < 0.5 ? 2*t*t : -1 + (4 - 2*t)*t,
+        })
+
+        // 3. Headline label floating above the active sphere.
+        const headline = chapter.headline || chapter.name
+        if (headline) {
+          const el = document.createElement('div')
+          el.className = 'loc-chapter-label'
+          el.textContent = headline
+          labelMarkerRef.current = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -18] })
+            .setLngLat([chapter.longitude, chapter.latitude])
+            .addTo(map)
+        }
+
+        // 4. Territory footprint — reverse-geocode to an admin polygon via Nominatim.
+        const cacheKey = chapter.id
+        if (footprintCache.current.has(cacheKey)) {
+          const cached = footprintCache.current.get(cacheKey)
+          if (cached) showFootprint(map, cached)
+          return
+        }
+
+        const nomZoom = nomZoomFor(chapter.camera?.zoom ?? 13)
+        const url = `https://nominatim.openstreetmap.org/reverse?lat=${chapter.latitude}&lon=${chapter.longitude}&format=geojson&zoom=${nomZoom}&polygon_geojson=1`
+        fetch(url, { headers: { 'Accept-Language': 'en' } })
+          .then(r => r.json())
+          .then(data => {
+            // Only Polygon/MultiPolygon makes sense as a territory outline.
+            const geom = data?.geometry
+            if (!geom || (geom.type !== 'Polygon' && geom.type !== 'MultiPolygon')) {
+              footprintCache.current.set(cacheKey, null)
+              return
+            }
+            const feature = { type: 'Feature', geometry: geom, properties: {} }
+            footprintCache.current.set(cacheKey, feature)
+            // Confirm we're still on the same chapter before painting.
+            if (prevIndexRef.current === idx) showFootprint(mapRef.current!, feature)
+          })
+          .catch(() => footprintCache.current.set(cacheKey, null))
+      })
     }
 
     if (to.longitude != null && to.latitude != null) prevLngLatRef.current = [to.longitude, to.latitude]
   }, [activeIndex, chapters, ready, reducedMotion, mapRef])
 
   return <div ref={containerRef} className="h-full w-full" data-testid="reader-map" />
+}
+
+// Set footprint GeoJSON and fade in the fill + stroke layers.
+function showFootprint(map: maplibregl.Map, feature: object) {
+  const src = map.getSource('chapter-footprint') as maplibregl.GeoJSONSource | undefined
+  if (!src) return
+  src.setData(feature as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+  // Tick lets MapLibre process the new data before the opacity transition fires.
+  requestAnimationFrame(() => {
+    if (!map.getLayer('chapter-footprint-fill')) return
+    map.setPaintProperty('chapter-footprint-fill',   'fill-opacity', 0.07)
+    map.setPaintProperty('chapter-footprint-stroke', 'line-opacity', 0.28)
+  })
 }
