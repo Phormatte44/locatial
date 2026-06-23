@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>LOCATIAL · Compilation (all-MapLibre · paper relief)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css" />
+<script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<style>
+  :root{
+    --signal:#ff2a6d; --ink:#2a261f; --paper:#fafafa; --paper-deep:#e8e8e6; --stone:#80808c;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;width:100%;overflow:hidden;background:var(--paper);
+    font-family:"Manrope",ui-sans-serif,system-ui,sans-serif;color:var(--ink)}
+  #map{position:fixed;inset:0;background:var(--paper)}
+  canvas{outline:none}
+  /* soft premium vignette — gentle edge darkening + cool tint for depth (contemporary framing) */
+  .vignette{position:fixed;inset:0;z-index:2;pointer-events:none;mix-blend-mode:multiply;
+    background:radial-gradient(125% 110% at 50% 36%, #ffffff 0%, #ffffff 52%, #eef0f3 78%, #dadde4 100%)}
+  /* paper grain (rig: 'NOISE OVERLAY') */
+  .grain{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:.045;mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+  /* concentric pulse + corner reticle on screen-centre anchor */
+  .pulse{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:5;
+    pointer-events:none;width:0;height:0;opacity:0;transition:opacity .6s ease}
+  .pulse.on{opacity:1}
+  .pulse > *{position:absolute;left:0;top:0;transform:translate(-50%,-50%);border-radius:50%}
+  .pulse .glow{width:240px;height:240px;background:radial-gradient(circle,rgba(255,45,122,.28) 0%,rgba(255,45,122,.10) 38%,transparent 64%)}
+  .pulse .ring{border:1px solid rgba(255,45,122,.5)}
+  .pulse .r1{width:40px;height:40px}
+  .pulse .r2{width:80px;height:80px;border-color:rgba(255,45,122,.32)}
+  .pulse .r3{width:130px;height:130px;border-color:rgba(255,45,122,.16)}
+  .pulse .ping{width:16px;height:16px;border:1.5px solid var(--signal);animation:ping 3.2s ease-out infinite}
+  .pulse .ping.p2{animation-delay:1.6s}
+  .pulse .dot{width:11px;height:11px;background:var(--signal);box-shadow:0 0 14px 3px rgba(255,45,122,.7)}
+  @keyframes ping{0%{width:14px;height:14px;opacity:.75}100%{width:190px;height:190px;opacity:0}}
+  .reticle{position:absolute;left:50%;top:50%;width:88px;height:88px;transform:translate(-50%,-50%)}
+  .reticle span{position:absolute;width:15px;height:15px;border:2px solid #2a261f88}
+  .reticle .tl{left:0;top:0;border-right:0;border-bottom:0}.reticle .tr{right:0;top:0;border-left:0;border-bottom:0}
+  .reticle .bl{left:0;bottom:0;border-right:0;border-top:0}.reticle .br{right:0;bottom:0;border-left:0;border-top:0}
+
+  /* icon chips (wordless) */
+  .icon-chip{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#161310;
+    border:1px solid #ffffff22;color:#efe9df;box-shadow:0 6px 18px #0006;cursor:pointer}
+  .icon-chip svg{width:14px;height:14px}
+
+  /* wordless scale navigation: a row of dots, one per stage */
+  .scalebar{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);z-index:10;display:flex;gap:6px;padding:8px 12px;
+    border-radius:999px;background:#fbfbfdcc;border:1px solid #0000000f;backdrop-filter:blur(8px);box-shadow:0 10px 40px #00000018}
+  .scalebar button{width:9px;height:9px;padding:0;margin:5px;border-radius:50%;border:1.5px solid #00000026;
+    background:transparent;cursor:pointer;transition:.2s ease}
+  .scalebar button:hover{border-color:#00000055;background:#00000012;transform:scale(1.15)}
+  .scalebar button.on{background:var(--signal);border-color:var(--signal);box-shadow:0 0 12px #ff2d7a88}
+  .scalebar .sep{width:1px;height:14px;background:#0000001a;margin:0 6px;align-self:center}
+
+  /* paper-white load screen (wordless) */
+  .loading{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:var(--paper);transition:opacity .8s ease}
+  .loading.gone{opacity:0;pointer-events:none}
+  .loading .d{width:8px;height:8px;border-radius:50%;background:var(--signal);box-shadow:0 0 14px var(--signal);
+    display:inline-block;animation:pl 1.1s ease-in-out infinite}
+  @keyframes pl{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}
+</style>
+</head>
+<body>
+  <script>window.addEventListener('error',e=>{window.__lastErr=(e.message||e.type)+' @ '+(e.filename||'').split('/').pop()+':'+(e.lineno||'');});window.addEventListener('unhandledrejection',e=>{window.__lastRej=String(e.reason);});</script>
+  <div id="map"></div>
+
+  <div class="vignette"></div>
+  <div class="grain"></div>
+
+  <div class="pulse" id="pulse">
+    <span class="glow"></span>
+    <span class="ring r3"></span><span class="ring r2"></span><span class="ring r1"></span>
+    <span class="ping"></span><span class="ping p2"></span><span class="dot"></span>
+    <span class="reticle"><span class="tl"></span><span class="tr"></span><span class="bl"></span><span class="br"></span></span>
+  </div>
+
+  <div class="loading" id="loading"><span class="d"></span></div>
+
+  <!-- OSM attribution required by ODbL (OpenFreeMap data) -->
+  <div style="position:fixed;bottom:8px;right:10px;z-index:20;font-size:9px;opacity:0.35;pointer-events:none;font-family:'Manrope',sans-serif;letter-spacing:0.02em">© OpenStreetMap contributors</div>
+
+  <nav class="scalebar" id="scalebar">
+    <button data-stage="globe" class="on"></button><button data-stage="continent"></button>
+    <button data-stage="country"></button><button data-stage="state"></button>
+    <button data-stage="city"></button><button data-stage="borough"></button>
+    <button data-stage="neighbourhood"></button><button data-stage="block"></button>
+    <button data-stage="street"></button>
+    <span class="sep"></span>
+    <button data-stage="mountain"></button><button data-stage="pass"></button><button data-stage="summit"></button>
+  </nav>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   LOCATIAL · COMPILATION — single-engine globe→street descent
+   Paper / "silver USGS" aesthetic — all-MapLibre, no dependencies:
+     · Mapterhorn DEM double-hillshade relief + OpenFreeMap vector, keyless
+     · Globe projection at every scale, charcoal stain sea
+     · Great-circle signal arcs, connectors, locked pins, grain overlay
+     · Terrain spur: MapLibre native setTerrain (Maroon Bells)
+   ════════════════════════════════════════════════════════════════ */
+
+const SIGNAL='#ff2a6d';
+const ANCHOR=[-74.0060,40.7128];   // Lower Manhattan (signal network anchor)
+
+/* ── Clay-render palette (high-key white clay) ──────────────────── */
+const PAL={ paper:'#edeff1', water:'#e4e8ec', coast:'#aab2bf', road:'#fbfcfd', building:'#ffffff' };  // stepped down off pure white for definition
+const MAPTERHORN_DEM='https://tiles.mapterhorn.com/tilejson.json';
+const OPENFREEMAP='https://tiles.openfreemap.org/planet';
+
+/* ── Maroon Bells terrain spur ──────────────────────────────────── */
+const PEAKS=[
+  {id:'maroon', c:[-106.9890,38.9439], kind:'summit'},
+  {id:'nmaroon',c:[-106.9869,38.9609], kind:'summit'},
+  {id:'lake',   c:[-106.9450,39.0975], kind:'rest'},
+  {id:'pass',   c:[-106.9980,39.0910], kind:'pass'},
+];
+function densify(a,b,n=48){const o=[];for(let i=0;i<=n;i++){const f=i/n;o.push([a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f]);}return o;}
+const TRAIL=[].concat(
+  densify([-107.0340,39.0810],[-106.9980,39.0910]),
+  densify([-106.9980,39.0910],[-106.9869,38.9609]),
+  densify([-106.9869,38.9609],[-106.9890,38.9439])
+);
+
+/* ── Signal data (NYC) ──────────────────────────────────────────── */
+const NODES=[
+  {id:'tribeca',c:[-74.0086,40.7180]},{id:'cityhall',c:[-74.0060,40.7128]},
+  {id:'fidi',c:[-74.0102,40.7068]},{id:'battery',c:[-74.0170,40.7036]},
+  {id:'seaport',c:[-74.0026,40.7066]},{id:'twobridge',c:[-73.9974,40.7110]},
+  {id:'luna',c:[-73.9967,40.7170]},
+];
+const NET=[['tribeca','cityhall'],['cityhall','fidi'],['fidi','battery'],['cityhall','seaport'],['seaport','twobridge'],['twobridge','luna'],['cityhall','luna']];
+const ROUTE=[[-73.9942,40.7160],[-73.9955,40.7165],[-73.9967,40.7170]];
+const CITIES={nyc:[-74,40.7],ldn:[-0.12,51.5],tko:[139.7,35.68],sf:[-122.42,37.77],sao:[-46.63,-23.55],dxb:[55.27,25.2]};
+const ARCS=[['nyc','ldn'],['nyc','sf'],['nyc','sao'],['ldn','tko'],['ldn','dxb'],['sf','tko']];
+
+function greatCircle(a,b,n=80){
+  const R=Math.PI/180,D=180/Math.PI,la1=a[1]*R,lo1=a[0]*R,la2=b[1]*R,lo2=b[0]*R;
+  const d=2*Math.asin(Math.sqrt(Math.sin((la2-la1)/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin((lo2-lo1)/2)**2));
+  if(!d)return[a,b]; const o=[];
+  for(let i=0;i<=n;i++){const f=i/n,A=Math.sin((1-f)*d)/Math.sin(d),B=Math.sin(f*d)/Math.sin(d);
+    const x=A*Math.cos(la1)*Math.cos(lo1)+B*Math.cos(la2)*Math.cos(lo2),y=A*Math.cos(la1)*Math.sin(lo1)+B*Math.cos(la2)*Math.sin(lo2),z=A*Math.sin(la1)+B*Math.sin(la2);
+    o.push([Math.atan2(y,x)*D,Math.atan2(z,Math.hypot(x,y))*D]);}
+  return o;
+}
+const fc=f=>({type:'FeatureCollection',features:f});
+const line=c=>({type:'Feature',geometry:{type:'LineString',coordinates:c},properties:{}});
+const pt=c=>({type:'Feature',geometry:{type:'Point',coordinates:c},properties:{}});
+// graticule: meridians + parallels, densified so they bend smoothly on the globe → reads the sphere's contour
+function graticule(step=20,R=80){
+  const f=[];
+  for(let lon=-180; lon<180; lon+=step){ const c=[]; for(let lat=-R; lat<=R; lat+=2) c.push([lon,lat]); f.push(line(c)); }
+  for(let lat=-R+10; lat<=R-10; lat+=step){ const c=[]; for(let lon=-180; lon<=180; lon+=2) c.push([lon,lat]); f.push(line(c)); }
+  return fc(f);
+}
+
+/* ── Paper style: built from scratch, Mapterhorn DEM + OpenFreeMap ── */
+function paperStyle(){
+  return {
+    version:8,
+    glyphs:'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+    projection:{type:'globe'},
+    sources:{
+      dem:{type:'raster-dem', url:MAPTERHORN_DEM},
+      omt:{type:'vector', url:OPENFREEMAP},
+    },
+    layers:[
+      {id:'paper', type:'background', paint:{'background-color':['interpolate',['linear'],['zoom'],10,PAL.paper,14,'#c8c8c8']}},
+      {id:'water', type:'fill', source:'omt','source-layer':'water', paint:{'fill-color':PAL.water}},
+      // double hillshade — strong base + soft top = USGS relief depth
+      {id:'hills', type:'hillshade', source:'dem', minzoom:0, paint:{
+        'hillshade-shadow-color':'#7a8490','hillshade-highlight-color':'#ffffff','hillshade-accent-color':'#ccd4de',
+        'hillshade-exaggeration':1.0,'hillshade-illumination-direction':315,'hillshade-illumination-anchor':'map'}},
+      {id:'hills2', type:'hillshade', source:'dem', minzoom:0, paint:{
+        'hillshade-shadow-color':'#b0bbc8','hillshade-highlight-color':'#ffffff','hillshade-accent-color':'#e8eef4',
+        'hillshade-exaggeration':0.22,'hillshade-illumination-direction':315,'hillshade-illumination-anchor':'map'}},
+      {id:'coast', type:'line', source:'omt','source-layer':'water', paint:{
+        'line-color':PAL.coast,'line-width':0.7,'line-opacity':0.5,'line-blur':0.3}},
+      // road casing: paper white fill, slightly wider — the road body
+      {id:'roads', type:'line', source:'omt','source-layer':'transportation', minzoom:12,
+        layout:{'line-cap':'round','line-join':'round'}, paint:{
+        'line-color':'#ffffff','line-width':['interpolate',['linear'],['zoom'],12,1.2,17,5],'line-opacity':0.9}},
+      // road centre line: thin hairline divider running down the middle
+      {id:'roads-centre', type:'line', source:'omt','source-layer':'transportation', minzoom:13,
+        layout:{'line-cap':'butt','line-join':'round'}, paint:{
+        'line-color':'#c8cdd4','line-width':['interpolate',['linear'],['zoom'],13,0.3,17,0.7],
+        'line-opacity':['interpolate',['linear'],['zoom'],13,0,14,0.55],'line-dasharray':[6,4]}},
+      // faked DIRECTIONAL cast shadow — footprint fill offset opposite the light (viewport-anchored),
+      // peeks out on the shadow side to ground each building. (fill-translate is a uniform offset, not
+      // a radial bleed; there's no fill-blur — the blurred line skirt below is the soft ambient part.)
+      {id:'building-shadow', type:'fill', source:'omt','source-layer':'building', minzoom:14, paint:{
+        'fill-color':'#7a8290',
+        'fill-translate':[-4,8], 'fill-translate-anchor':'viewport',
+        'fill-opacity':['interpolate',['linear'],['zoom'],14,0,15,0.55]}},
+      // soft contact-shadow skirt — a blurred footprint line that bleeds onto the ground around each
+      // building base, faking ambient occlusion where walls meet the clay floor
+      {id:'building-skirt', type:'line', source:'omt','source-layer':'building', minzoom:14, layout:{'line-join':'round'}, paint:{
+        'line-color':'#a8b0bc',
+        'line-width':['interpolate',['linear'],['zoom'],14,1.5,16.5,7],
+        'line-blur':3,
+        'line-opacity':['interpolate',['linear'],['zoom'],14,0,15,0.7]}},
+      {id:'buildings', type:'fill-extrusion', source:'omt','source-layer':'building', minzoom:14, paint:{
+        'fill-extrusion-color':PAL.building,
+        // OpenFreeMap building footprints only exist from z14, so growth starts there: emerge from 0 at
+        // z14 and EASE-OUT (exp base 0.6 = lots of growth early, very little near the end) to full by z17.
+        'fill-extrusion-height':['interpolate',['exponential',0.6],['zoom'],14,0,17,['coalesce',['get','render_height'],10]],
+        'fill-extrusion-base':['interpolate',['exponential',0.6],['zoom'],14,0,17,['coalesce',['get','render_min_height'],0]],
+        'fill-extrusion-vertical-gradient':true,   // native depth cue (darkens bases); AO is Mapbox-only
+        'fill-extrusion-opacity':['interpolate',['linear'],['zoom'],14,0,14.6,1]}},
+    ],
+    sky:{},
+  };
+}
+
+/* ── Map ─────────────────────────────────────────────────────────── */
+const map=new maplibregl.Map({
+  container:'map', style:paperStyle(),
+  center:ANCHOR, zoom:0.7, pitch:0, bearing:0, maxPitch:80, minZoom:0,
+  interactive:true, attributionControl:false,    // full free control — drag to spin/tilt, scroll to zoom
+  canvasContextAttributes:{antialias:true},
+});
+window.map=map;
+
+/* ── Scale levels: globe → street + terrain spur ────────────────── */
+const LEVELS={
+  globe:        {zoom:0.7,  pitch:0,  bearing:0  },
+  continent:    {zoom:2.8,  pitch:0,  bearing:0  },
+  country:      {zoom:4.2,  pitch:0,  bearing:0  },
+  state:        {zoom:6.4,  pitch:24, bearing:-8 },
+  city:         {zoom:11.8, pitch:42, bearing:-16},
+  borough:      {zoom:13.2, pitch:48, bearing:-17},
+  neighbourhood:{zoom:14.4, pitch:54, bearing:-18},
+  block:        {zoom:15.7, pitch:58, bearing:-12},
+  street:       {zoom:16.8, pitch:64, bearing:-6 },
+  mountain:     {center:[-106.985,38.975], zoom:11.7, pitch:62, bearing:-22},
+  pass:         {center:[-106.989,38.952], zoom:12.6, pitch:66, bearing:-22},
+  summit:       {center:[-106.989,38.946], zoom:13.2, pitch:64, bearing:-16},
+};
+const ORDER=['globe','continent','country','state','city','borough','neighbourhood','block','street'];
+const TERRAIN=['mountain','pass','summit'];
+const isMap=n=>ORDER.indexOf(n)>=ORDER.indexOf('city');
+const isTerrain=n=>TERRAIN.includes(n);
+const $=s=>document.querySelector(s);
+let activeStage='globe';
+
+// build-from-ground is now ZOOM-DRIVEN in the buildings layer paint (grows z13.5→15),
+// so it works under free-zoom too — no time-based rAF needed.
+let terrainOn=false;
+
+/* ── HUD (wordless) ──────────────────────────────────────────────── */
+function applyHud(name){
+  $('#pulse').classList.toggle('on',isMap(name)&&name!=='street');
+  document.querySelectorAll('#scalebar button').forEach(b=>b.classList.toggle('on',b.dataset.stage===name));
+  setMarkers(name); setScope(name);
+}
+function easeInOutQuint(t){return t<.5?16*t*t*t*t*t:1-Math.pow(-2*t+2,5)/2}
+
+function goStage(name){
+  const s=LEVELS[name]; if(!s)return;
+  const center=s.center||ANCHOR;
+  const dz=Math.abs(map.getZoom()-s.zoom);
+  const dur=Math.min(3200,Math.max(1300,850+165*dz));
+  activeStage=name;
+  // MapLibre 3D terrain (Mapterhorn DEM) only on the mountain stages = lighter flat moves elsewhere
+  const wantTerrain=isTerrain(name);
+  if(wantTerrain!==terrainOn){ map.setTerrain(wantTerrain?{source:'dem',exaggeration:1.3}:null); terrainOn=wantTerrain; }
+  map.flyTo({center, zoom:s.zoom, pitch:s.pitch, bearing:s.bearing, duration:dur, curve:1.42, easing:easeInOutQuint, essential:true});
+  applyHud(name);
+}
+window.goStage=goStage;
+
+/* ── Signal layers (arcs / network / route / nodes / trail) ─────── */
+function addSignals(){
+  map.addSource('arcs',{type:'geojson',data:fc(ARCS.map(([a,b])=>line(greatCircle(CITIES[a],CITIES[b]))))});
+  map.addSource('worldnodes',{type:'geojson',data:fc(Object.values(CITIES).map(pt))});
+  map.addSource('net',{type:'geojson',data:fc(NET.map(([a,b])=>{const A=NODES.find(n=>n.id===a).c,B=NODES.find(n=>n.id===b).c;return line([A,[(A[0]+B[0])/2,(A[1]+B[1])/2+0.0006],B]);}))});
+  map.addSource('route',{type:'geojson',data:fc([line(ROUTE)])});
+  map.addSource('nodes',{type:'geojson',data:fc(NODES.map(n=>pt(n.c)))});
+  map.addSource('trail',{type:'geojson',data:fc([line(TRAIL)])});
+
+  map.addLayer({id:'trail-glow',type:'line',source:'trail',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':SIGNAL,'line-width':8,'line-blur':6,'line-opacity':0}});
+  map.addLayer({id:'trail-core',type:'line',source:'trail',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':SIGNAL,'line-width':2.2,'line-opacity':0}});
+  map.addLayer({id:'arc-glow',type:'line',source:'arcs',layout:{'line-cap':'round'},paint:{'line-color':SIGNAL,'line-width':4,'line-blur':5,'line-opacity':0}});
+  map.addLayer({id:'arc-core',type:'line',source:'arcs',layout:{'line-cap':'round'},paint:{'line-color':SIGNAL,'line-width':1.1,'line-opacity':0}});
+  map.addLayer({id:'net-glow',type:'line',source:'net',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':SIGNAL,'line-width':6,'line-blur':5,'line-opacity':0}});
+  map.addLayer({id:'net-core',type:'line',source:'net',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':SIGNAL,'line-width':1.4,'line-opacity':0}});
+  map.addLayer({id:'route-glow',type:'line',source:'route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':SIGNAL,'line-width':9,'line-blur':6,'line-opacity':0}});
+  map.addLayer({id:'route-core',type:'line',source:'route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':SIGNAL,'line-width':2.2,'line-opacity':0}});
+  map.addLayer({id:'wnode',type:'circle',source:'worldnodes',paint:{'circle-color':SIGNAL,'circle-radius':5,'circle-blur':.4,'circle-opacity':0}});
+  map.addLayer({id:'node-bloom',type:'circle',source:'nodes',paint:{'circle-color':SIGNAL,'circle-blur':1,'circle-opacity':0,'circle-radius':['interpolate',['linear'],['zoom'],10,10,14,22,17,40]}});
+  map.addLayer({id:'node-glow',type:'circle',source:'nodes',paint:{'circle-color':SIGNAL,'circle-blur':.5,'circle-opacity':0,'circle-radius':['interpolate',['linear'],['zoom'],10,4,14,8,17,13]}});
+  map.addLayer({id:'node-core',type:'circle',source:'nodes',paint:{'circle-color':'#fff','circle-stroke-color':SIGNAL,'circle-stroke-width':2,'circle-opacity':0,'circle-radius':['interpolate',['linear'],['zoom'],10,1.6,14,3,17,5]}});
+}
+function setScope(name){
+  const onMap=isMap(name), street=name==='street', globe=(name==='globe'||name==='continent');
+  const set=(id,p,v)=>map.getLayer(id)&&map.setPaintProperty(id,p,v);
+  set('arc-glow','line-opacity',globe?.45:0); set('arc-core','line-opacity',globe?.85:0);
+  set('wnode','circle-opacity',globe?.85:0);
+  set('net-glow','line-opacity',onMap&&!street?.30:0); set('net-core','line-opacity',onMap&&!street?.85:0);
+  set('route-glow','line-opacity',street?.5:0); set('route-core','line-opacity',street?.95:0);
+  set('node-bloom','circle-opacity',onMap?.42:0); set('node-glow','circle-opacity',onMap?.9:0); set('node-core','circle-opacity',onMap?1:0);
+  set('trail-glow','line-opacity',(name==='pass'||name==='summit')?.45:0); set('trail-core','line-opacity',(name==='pass'||name==='summit')?.9:0);
+}
+
+/* ── HTML markers — wordless dots + icon chips, locked to lng/lat ── */
+let markers=[];
+const mk=(el,c,anchor='center',off=[0,0])=>{const m=new maplibregl.Marker({element:el,anchor,offset:off}).setLngLat(c).addTo(map);markers.push(m);return m;};
+const IC={cam:'<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="14" height="11" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M17 11l4-2v6l-4-2" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+  img:'<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.6"/><circle cx="8.5" cy="10" r="1.6" fill="currentColor"/><path d="M5 17l5-4 4 3 3-2 3 3" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>',
+  tree:'<svg viewBox="0 0 24 24" fill="none"><path d="M12 3l5 7h-3l3 5H7l3-5H7l5-7z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 15v5" stroke="currentColor" stroke-width="1.5"/></svg>'};
+function chip(svg){const d=document.createElement('div');d.className='icon-chip';d.innerHTML=svg;return d;}
+function peakDot(kind){
+  const d=document.createElement('div');
+  const col=kind==='summit'?SIGNAL:kind==='pass'?'#c8c4bc':'#c8a84a';
+  d.style.cssText=`width:13px;height:13px;border-radius:50%;background:${col};border:2px solid #fff;box-shadow:0 0 12px 3px ${col}cc, 0 2px 6px #0006`;
+  return d;
+}
+function setMarkers(name){
+  markers.forEach(m=>m.remove()); markers=[];
+  if(isTerrain(name)){ PEAKS.forEach(p=>mk(peakDot(p.kind),p.c,'center')); return; }
+  if(!isMap(name))return;
+  if(name==='city'||name==='borough'||name==='neighbourhood'){
+    mk(chip(IC.img),[-74.0048,40.7155]); mk(chip(IC.cam),[-73.9994,40.7138]); mk(chip(IC.tree),[-74.0066,40.7196]);
+  }
+}
+
+/* ── Boot ────────────────────────────────────────────────────────── */
+map.on('style.load',()=>{
+  // atmosphere-blend:0 — hard off; any value > 0 causes rim blowout on the near-white page background
+  map.setSky({'sky-color':'#d8d9dd','horizon-color':'#f0f1f5','fog-color':'#d8d9dd','sky-horizon-blend':0.3,'horizon-fog-blend':0,
+    'atmosphere-blend':0});
+  map.setLight({anchor:'viewport', color:'#ffffff', intensity:['interpolate',['linear'],['zoom'],2,0.28,12,0.22], position:[1.5,315,25]});
+
+  // ── CHARCOAL STAIN SEA — diffuse graphite wash. Opacity ~70% lets the DEM hillshade breathe
+  // through so water reads as matte textured ink rather than flat lacquer.
+  map.addLayer({id:'stain-base', type:'fill', source:'omt','source-layer':'water', paint:{'fill-color':'#181818','fill-opacity':0.80}}, 'coast');
+  map.addLayer({id:'stain-wash', type:'fill', source:'omt','source-layer':'water', paint:{'fill-color':'#2e2e2e','fill-opacity':0.16}}, 'coast');
+
+  // ── GRATICULE — the lat/long grid itself: pure geometric lines that bend with the globe to
+  // describe its contour. Sparse (every 20°) so it reads the sphere without being busy.
+  // Fades out by region scale, where it would just be clutter.
+  map.addSource('grat',{type:'geojson',data:graticule(15)});
+  map.addLayer({ id:'graticule', type:'line', source:'grat', layout:{'line-cap':'round'}, paint:{
+    'line-color':'#c8f000',
+    'line-width':['interpolate',['linear'],['zoom'],0,0.8,4,0.6],
+    'line-opacity':['interpolate',['linear'],['zoom'],0,0.55,3,0.38,6,0] }}, 'coast');
+
+  addSignals();
+  applyHud('globe');
+});
+map.on('load',()=>$('#loading').classList.add('gone'));
+setTimeout(()=>$('#loading').classList.add('gone'),6000);
+
+/* ── Controls ───────────────────────────────────────────────────── */
+document.querySelectorAll('#scalebar button').forEach(b=>b.addEventListener('click',()=>goStage(b.dataset.stage)));
+window.addEventListener('keydown',e=>{const i=ORDER.indexOf(activeStage);
+  if(e.key==='ArrowDown'&&i<ORDER.length-1)goStage(ORDER[i+1]); if(e.key==='ArrowUp'&&i>0)goStage(ORDER[i-1]);});
+window.addEventListener('resize',()=>{try{map.resize();}catch(e){}});
+</script>
+
+</body>
+</html>
