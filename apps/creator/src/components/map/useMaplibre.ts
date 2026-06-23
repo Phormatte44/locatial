@@ -13,6 +13,7 @@ function paperStyle(): StyleSpecification {
   return {
     version: 8,
     glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+    projection: { type: 'globe' },
     sources: {
       dem: { type: 'raster-dem', url: MAPTERHORN_DEM },
       omt: { type: 'vector', url: OPENFREEMAP },
