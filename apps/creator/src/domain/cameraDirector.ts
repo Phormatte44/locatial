@@ -17,9 +17,8 @@ export type CameraMove = {
   curve: number
 }
 
-// Defaults matched to locatial.io's PlayceList camera: pitched 3D view, slight bearing.
-const DEFAULTS = { zoom: 13, pitch: 35, bearing: -10 }
-// Cap pitch so no chapter feels like an ant-view over the terrain.
+const DEFAULTS = { zoom: 13, bearing: -10 }
+// Hard ceiling — no chapter can exceed this, even with explicit DB data.
 const MAX_PITCH = 35
 // locatial.io uses Mapbox flyTo({ speed: 0.6, curve: 1.8 }) for every place transition.
 const FLY = { speed: 0.6, curve: 1.42 }
@@ -57,10 +56,14 @@ export function directCamera(opts: {
   if (!target) return null
 
   const intent: CameraIntent = opts.to.camera ?? {}
+  const zoom = intent.zoom ?? DEFAULTS.zoom
+  // Pitch scales with zoom: flat at country-level, tilted at street-level.
+  // An explicit DB pitch is still respected (capped at MAX_PITCH).
+  const autoPitch = Math.min(Math.max((zoom - 7) * 5, 0), MAX_PITCH)
   const base = {
     center: target,
-    zoom: intent.zoom ?? DEFAULTS.zoom,
-    pitch: Math.min(intent.pitch ?? DEFAULTS.pitch, MAX_PITCH),
+    zoom,
+    pitch: Math.min(intent.pitch ?? autoPitch, MAX_PITCH),
     bearing: intent.bearing ?? DEFAULTS.bearing,
     ...FLY,
   }

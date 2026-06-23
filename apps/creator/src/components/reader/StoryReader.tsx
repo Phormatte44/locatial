@@ -1,5 +1,4 @@
-// StoryReader — composes the map (upper) + carousel (lower) with synchronized state.
-// Used by the public /story/:slug route AND by the Studio Preview (same real component).
+// StoryReader — map (upper) + carousel (lower) in a unified paper register.
 import { useEffect, useMemo, useState } from 'react'
 import type { StoryBundle } from '../../domain/types'
 import { sortByPosition } from '../../domain/ordering'
@@ -32,29 +31,40 @@ export function StoryReader({ bundle }: { bundle: StoryBundle }) {
   }, [chapters.length, activeIndex])
 
   if (chapters.length === 0) {
-    return <div className="flex h-full items-center justify-center text-sm text-gray-mid">This story has no chapters yet.</div>
+    return (
+      <div className="flex h-full items-center justify-center bg-paper text-sm text-stone">
+        This story has no chapters yet.
+      </div>
+    )
   }
 
   const active = chapters[activeIndex]
   const activeSection = active?.sectionId ? sections.find((s) => s.id === active.sectionId) : null
 
   return (
-    <div className="flex h-full flex-col bg-night" data-testid="story-reader">
-      {/* Upper half: map */}
-      <div className="relative" style={{ height: '42%', background: '#edeff1' }}>
-        <ReaderMap chapters={chapters} activeIndex={activeIndex} reducedMotion={reducedMotion} />
+    <div className="flex h-full flex-col bg-paper" data-testid="story-reader">
+      {/* Map — 55% of viewport height; paper-white everywhere */}
+      <div className="relative shrink-0" style={{ height: '55%', background: '#edeff1' }}>
+        <ReaderMap
+          chapters={chapters}
+          activeIndex={activeIndex}
+          reducedMotion={reducedMotion}
+          onChapterClick={setActiveIndex}
+        />
+
+        {/* Overlay — dark pill for contrast on the light map */}
         <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between p-2">
-          <div className="rounded-md bg-night/80 px-2 py-1">
+          <div className="rounded-md bg-night/75 px-2 py-1 backdrop-blur-sm">
             <div className="text-xs font-extrabold text-chalk">{bundle.story.title}</div>
             <SectionIndicator section={activeSection} />
           </div>
-          <div className="rounded-md bg-night/80 px-2 py-1">
+          <div className="rounded-md bg-night/75 px-2 py-1 backdrop-blur-sm">
             <ReaderProgress index={activeIndex} total={chapters.length} />
           </div>
         </div>
       </div>
 
-      {/* Lower half: content carousel */}
+      {/* Content — same paper register as the map */}
       <div className="min-h-0 flex-1">
         <ChapterCarousel
           chapters={chapters}

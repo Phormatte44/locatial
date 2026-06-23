@@ -29,23 +29,26 @@ function makeSphere(): HTMLDivElement {
   const el = document.createElement('div')
   el.style.borderRadius = '50%'
   el.style.pointerEvents = 'auto'
+  el.style.cursor = 'pointer'
   return el
 }
 
-function styleSphere(el: HTMLElement, active: boolean, dimmed: boolean) {
-  el.style.opacity = dimmed ? '0.4' : '1'
+function styleSphere(el: HTMLElement, active: boolean) {
   if (active) {
     el.style.width = '14px'
     el.style.height = '14px'
+    el.style.opacity = '1'
     el.style.background = `radial-gradient(circle at 38% 38%, #ff8cb5, ${SIGNAL} 50%, #c4005a)`
     el.style.boxShadow = `0 0 0 3px rgba(255,45,122,0.25), 0 3px 10px rgba(255,45,122,0.5), 0 1px 3px rgba(0,0,0,0.3)`
     el.style.zIndex = '10'
   } else {
-    el.style.width = '8px'
-    el.style.height = '8px'
-    el.style.background = 'radial-gradient(circle at 38% 38%, #c8cdd4, #9aa0aa)'
-    el.style.boxShadow = '0 1px 4px rgba(0,0,0,0.2)'
-    el.style.zIndex = '1'
+    el.style.width = '10px'
+    el.style.height = '10px'
+    el.style.opacity = '1'
+    // White sphere with a gray ring — clearly distinct from the gray arc lines.
+    el.style.background = '#ffffff'
+    el.style.boxShadow = '0 0 0 2px rgba(130,144,160,0.65), 0 2px 6px rgba(0,0,0,0.12)'
+    el.style.zIndex = '2'
   }
 }
 
@@ -68,9 +71,10 @@ type Props = {
   chapters: Chapter[]
   activeIndex: number
   reducedMotion?: boolean
+  onChapterClick?: (index: number) => void
 }
 
-export function ReaderMap({ chapters, activeIndex, reducedMotion }: Props) {
+export function ReaderMap({ chapters, activeIndex, reducedMotion, onChapterClick }: Props) {
   const first = chapters.find((c) => typeof c.longitude === 'number')
   const { containerRef, mapRef, ready } = useMaplibre({
     interactive: true,
@@ -89,19 +93,21 @@ export function ReaderMap({ chapters, activeIndex, reducedMotion }: Props) {
     if (!map || !ready) return
     const active = chapters[activeIndex]
     const seen = new Set<string>()
-    chapters.forEach((c) => {
+    chapters.forEach((c, idx) => {
       if (typeof c.longitude !== 'number' || typeof c.latitude !== 'number') return
       seen.add(c.id)
       let marker = markersRef.current.get(c.id)
+      const isNew = !marker
       const el = marker?.getElement() ?? makeSphere()
-      styleSphere(el, c.id === active?.id, c.id !== active?.id)
-      if (!marker) {
+      styleSphere(el, c.id === active?.id)
+      if (isNew) {
+        el.addEventListener('click', () => onChapterClick?.(idx))
         marker = new maplibregl.Marker({ element: el, anchor: 'center' })
           .setLngLat([c.longitude, c.latitude])
           .addTo(map)
         markersRef.current.set(c.id, marker)
       } else {
-        marker.setLngLat([c.longitude, c.latitude])
+        marker!.setLngLat([c.longitude, c.latitude])
       }
     })
     for (const [id, marker] of markersRef.current) {

@@ -8,6 +8,7 @@ export default {
       colors: {
         signal: '#6211DC',
         'signal-dim': '#6211DCCC',
+        'signal-pink': '#ff2d7a',
         lime: '#c8f000',
         night: '#131313',
         root: '#0e0e0e',
@@ -18,9 +19,15 @@ export default {
         'gray-lo': '#b6b6b6',
         'gray-rule': '#2c2c2c',
         chalk: '#f2f2f2',
+        // Reader / paper palette
+        paper: '#edeff1',
+        'paper-rule': '#d0d5de',
+        'paper-card': '#e2e6ed',
+        ink: '#1a1a1a',
+        stone: '#5c6370',
       },
       fontFamily: {
-        sans: ['Poppins', 'Gilroy', 'system-ui', 'sans-serif'],
+        sans: ['Manrope', 'Poppins', 'system-ui', 'sans-serif'],
       },
     },
   },
