@@ -20,7 +20,7 @@ export type CameraMove = {
 // Defaults matched to locatial.io's PlayceList camera: pitched 3D view, slight bearing.
 const DEFAULTS = { zoom: 13, pitch: 60, bearing: -10 }
 // locatial.io uses Mapbox flyTo({ speed: 0.6, curve: 1.8 }) for every place transition.
-const FLY = { speed: 0.6, curve: 1.8 }
+const FLY = { speed: 0.6, curve: 1.42 }
 
 /** Great-circle distance in metres between two [lng,lat] points. */
 export function haversineMeters(a: LngLat, b: LngLat): number {

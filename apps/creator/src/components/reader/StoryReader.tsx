@@ -41,7 +41,7 @@ export function StoryReader({ bundle }: { bundle: StoryBundle }) {
   return (
     <div className="flex h-full flex-col bg-night" data-testid="story-reader">
       {/* Upper half: map */}
-      <div className="relative" style={{ height: '42%' }}>
+      <div className="relative" style={{ height: '42%', background: '#edeff1' }}>
         <ReaderMap chapters={chapters} activeIndex={activeIndex} reducedMotion={reducedMotion} />
         <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between p-2">
           <div className="rounded-md bg-night/80 px-2 py-1">

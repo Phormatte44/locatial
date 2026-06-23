@@ -78,20 +78,25 @@ function paperStyle(): StyleSpecification {
         },
       },
     ],
-  // MapLibre expression arrays are too complex to satisfy TS generics here; the runtime handles them correctly.
   } as unknown as StyleSpecification
 }
 
 function applyPostLoadLayers(map: maplibregl.Map) {
+  // Paper white sky — outside-globe area matches the paper background, not black space.
   map.setSky({
-    'sky-color': '#d8d9dd', 'horizon-color': '#f0f1f5', 'fog-color': '#d8d9dd',
-    'sky-horizon-blend': 0.3, 'horizon-fog-blend': 0,
+    'sky-color': '#edeff1',
+    'horizon-color': '#f4f4f2',
+    'fog-color': '#edeff1',
+    'sky-horizon-blend': 0.3,
+    'horizon-fog-blend': 0,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     'atmosphere-blend': 0 as any,
   })
   // Charcoal stain sea — diffuse graphite wash so water reads as matte ink, not flat fill.
   if (!map.getLayer('stain-base')) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     map.addLayer({ id: 'stain-base', type: 'fill', source: 'omt', 'source-layer': 'water', paint: { 'fill-color': '#181818', 'fill-opacity': 0.80 } } as any, 'coast')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     map.addLayer({ id: 'stain-wash', type: 'fill', source: 'omt', 'source-layer': 'water', paint: { 'fill-color': '#2e2e2e', 'fill-opacity': 0.16 } } as any, 'coast')
   }
 }
@@ -108,15 +113,20 @@ export function useMaplibre(opts?: {
   useEffect(() => {
     const container = containerRef.current
     if (!container || mapRef.current) return
+
+    // Paper white behind the globe — shows through the canvas before sky paints.
+    container.style.background = '#edeff1'
+
     const map = new maplibregl.Map({
       container,
       style: paperStyle(),
       center: opts?.center ?? [-0.1278, 51.5074],
       zoom: opts?.zoom ?? 12,
-      pitch: 60,
-      bearing: -10,
+      pitch: 0,      // start flat; cameraDirector sets pitch when flying to chapters
+      bearing: 0,
       interactive: opts?.interactive ?? true,
       attributionControl: false,
+      canvasContextAttributes: { antialias: true },
     })
     mapRef.current = map
 
@@ -160,30 +170,25 @@ export function useMaplibre(opts?: {
   return { containerRef, mapRef, ready }
 }
 
-export function makePinElement(label: string): HTMLDivElement {
+/** Plain pillar pin — no label text, transform-origin at base for globe rotation. */
+export function makePinElement(): HTMLDivElement {
   const el = document.createElement('div')
   el.className = 'loc-pin'
-  const lbl = document.createElement('span')
-  lbl.className = 'loc-pin-label'
-  lbl.textContent = label
+  el.style.transformOrigin = 'bottom center'
   const pillar = document.createElement('div')
   pillar.className = 'loc-pin-pillar'
-  el.appendChild(lbl)
   el.appendChild(pillar)
   return el
 }
 
 export function stylePin(el: HTMLElement, active: boolean, dimmed = false) {
-  const label = el.querySelector('.loc-pin-label') as HTMLElement | null
   const pillar = el.querySelector('.loc-pin-pillar') as HTMLElement | null
-  if (!label || !pillar) return
+  if (!pillar) return
   el.style.opacity = dimmed ? '0.35' : '1'
   el.style.zIndex = active ? '10' : '1'
   if (active) {
-    label.style.cssText = `color:${SIGNAL};font-size:11px;font-weight:800;white-space:nowrap;margin-bottom:5px;text-shadow:0 0 12px rgba(255,45,122,0.7);`
     pillar.style.cssText = `width:10px;height:60px;border-radius:5px;background:linear-gradient(135deg,#ff5fa0 0%,${SIGNAL} 50%,#c4005a 100%);box-shadow:0 0 18px rgba(255,45,122,0.75),0 2px 8px rgba(0,0,0,0.3);`
   } else {
-    label.style.cssText = 'color:#80808c;font-size:10px;font-weight:700;white-space:nowrap;margin-bottom:4px;'
     pillar.style.cssText = 'width:7px;height:26px;border-radius:3.5px;background:linear-gradient(135deg,#aab2bf 0%,#80808c 100%);box-shadow:0 2px 6px rgba(0,0,0,0.25);'
   }
 }
