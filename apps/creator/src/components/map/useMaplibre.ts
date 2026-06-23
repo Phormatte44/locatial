@@ -181,11 +181,17 @@ export function useMaplibre(opts?: {
   return { containerRef, mapRef, ready }
 }
 
-/** Plain pillar pin — no label text, transform-origin at base for globe rotation. */
-export function makePinElement(): HTMLDivElement {
+/** Studio pillar pin — label + stem for the creator map. */
+export function makePinElement(label?: string): HTMLDivElement {
   const el = document.createElement('div')
   el.className = 'loc-pin'
   el.style.transformOrigin = 'bottom center'
+  if (label) {
+    const lbl = document.createElement('div')
+    lbl.className = 'loc-pin-label'
+    lbl.textContent = label
+    el.appendChild(lbl)
+  }
   const pillar = document.createElement('div')
   pillar.className = 'loc-pin-pillar'
   el.appendChild(pillar)
