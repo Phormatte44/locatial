@@ -202,10 +202,10 @@ export function ReaderMap({ chapters, activeIndex, reducedMotion, onChapterClick
     if (!to) return
 
     const isFirstMove = prevIndexRef.current < 0
-    const idx = activeIndex           // capture for closure
+    const idx = activeIndex
     prevIndexRef.current = activeIndex
 
-    // Fade out old footprint + remove old label at the start of every transition.
+    // Fade out old footprint + clear old label at the start of every transition.
     if (map.getLayer('chapter-footprint-fill')) {
       map.setPaintProperty('chapter-footprint-fill',   'fill-opacity', 0)
       map.setPaintProperty('chapter-footprint-stroke', 'line-opacity', 0)
@@ -221,12 +221,72 @@ export function ReaderMap({ chapters, activeIndex, reducedMotion, onChapterClick
 
     const base = { center: move.center, zoom: move.zoom, pitch: move.pitch, bearing: move.bearing }
 
-    if (move.mode === 'jump-to' || isFirstMove) {
+    // showArrival fires after the camera settles — for both jumpTo and flyTo.
+    const showArrival = (withCinematic: boolean) => {
+      if (prevIndexRef.current !== idx) return
+      const chapter = chapters[idx]
+      if (!chapter?.longitude || !chapter?.latitude) return
+
+      if (withCinematic) {
+        // Ripple pulse on the active sphere.
+        const activeMarker = markersRef.current.get(chapter.id)
+        if (activeMarker) {
+          const ripple = document.createElement('div')
+          ripple.className = 'loc-sphere-ripple'
+          activeMarker.getElement().appendChild(ripple)
+          setTimeout(() => ripple.remove(), 1500)
+        }
+        // Slow 13° bearing sweep reveals terrain depth.
+        map.easeTo({
+          bearing: map.getBearing() + 13,
+          duration: 3500,
+          easing: (t: number) => t < 0.5 ? 2*t*t : -1 + (4 - 2*t)*t,
+        })
+      }
+
+      // Headline label above the active sphere.
+      const headline = chapter.headline || chapter.name
+      if (headline) {
+        const el = document.createElement('div')
+        el.className = 'loc-chapter-label'
+        el.textContent = headline
+        labelMarkerRef.current = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -18] })
+          .setLngLat([chapter.longitude, chapter.latitude])
+          .addTo(map)
+      }
+
+      // Territory footprint — Nominatim reverse-geocode → admin polygon.
+      const cacheKey = chapter.id
+      if (footprintCache.current.has(cacheKey)) {
+        const cached = footprintCache.current.get(cacheKey)
+        if (cached) showFootprint(map, cached)
+        return
+      }
+      const nomZoom = nomZoomFor(chapter.camera?.zoom ?? 13)
+      const url = `https://nominatim.openstreetmap.org/reverse?lat=${chapter.latitude}&lon=${chapter.longitude}&format=geojson&zoom=${nomZoom}&polygon_geojson=1`
+      fetch(url, { headers: { 'Accept-Language': 'en' } })
+        .then(r => r.json())
+        .then(data => {
+          const geom = data?.geometry
+          if (!geom || (geom.type !== 'Polygon' && geom.type !== 'MultiPolygon')) {
+            footprintCache.current.set(cacheKey, null)
+            return
+          }
+          const feature = { type: 'Feature', geometry: geom, properties: {} }
+          footprintCache.current.set(cacheKey, feature)
+          if (prevIndexRef.current === idx) showFootprint(mapRef.current!, feature)
+        })
+        .catch(() => footprintCache.current.set(cacheKey, null))
+    }
+
+    if (isFirstMove) {
       map.jumpTo(base)
+      // jumpTo fires moveend synchronously — use setTimeout to fire after render.
+      setTimeout(() => showArrival(false), 400)
     } else {
       map.flyTo({ ...base, speed: move.speed, curve: move.curve, essential: true })
 
-      // Chaser travels along the arc while the camera flies.
+      // Chaser along the arc while the camera flies.
       const chaser = chaserRef.current
       if (chaser && prevLngLatRef.current && to.longitude != null && to.latitude != null) {
         const arc = greatCircle(prevLngLatRef.current, [to.longitude, to.latitude])
@@ -243,67 +303,7 @@ export function ReaderMap({ chapters, activeIndex, reducedMotion, onChapterClick
         arcAnimRef.current = requestAnimationFrame(tick)
       }
 
-      // On arrival: ripple + cinematic orbit + headline label + territory footprint.
-      map.once('moveend', () => {
-        // Guard: user may have already navigated to a different chapter.
-        if (prevIndexRef.current !== idx) return
-
-        const chapter = chapters[idx]
-        if (!chapter?.longitude || !chapter?.latitude) return
-
-        // 1. Ripple pulse on the active sphere.
-        const activeMarker = markersRef.current.get(chapter.id)
-        if (activeMarker) {
-          const ripple = document.createElement('div')
-          ripple.className = 'loc-sphere-ripple'
-          activeMarker.getElement().appendChild(ripple)
-          setTimeout(() => ripple.remove(), 1500)
-        }
-
-        // 2. Cinematic orbit — slow 13° bearing sweep to reveal terrain depth.
-        map.easeTo({
-          bearing: map.getBearing() + 13,
-          duration: 3500,
-          easing: (t: number) => t < 0.5 ? 2*t*t : -1 + (4 - 2*t)*t,
-        })
-
-        // 3. Headline label floating above the active sphere.
-        const headline = chapter.headline || chapter.name
-        if (headline) {
-          const el = document.createElement('div')
-          el.className = 'loc-chapter-label'
-          el.textContent = headline
-          labelMarkerRef.current = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -18] })
-            .setLngLat([chapter.longitude, chapter.latitude])
-            .addTo(map)
-        }
-
-        // 4. Territory footprint — reverse-geocode to an admin polygon via Nominatim.
-        const cacheKey = chapter.id
-        if (footprintCache.current.has(cacheKey)) {
-          const cached = footprintCache.current.get(cacheKey)
-          if (cached) showFootprint(map, cached)
-          return
-        }
-
-        const nomZoom = nomZoomFor(chapter.camera?.zoom ?? 13)
-        const url = `https://nominatim.openstreetmap.org/reverse?lat=${chapter.latitude}&lon=${chapter.longitude}&format=geojson&zoom=${nomZoom}&polygon_geojson=1`
-        fetch(url, { headers: { 'Accept-Language': 'en' } })
-          .then(r => r.json())
-          .then(data => {
-            // Only Polygon/MultiPolygon makes sense as a territory outline.
-            const geom = data?.geometry
-            if (!geom || (geom.type !== 'Polygon' && geom.type !== 'MultiPolygon')) {
-              footprintCache.current.set(cacheKey, null)
-              return
-            }
-            const feature = { type: 'Feature', geometry: geom, properties: {} }
-            footprintCache.current.set(cacheKey, feature)
-            // Confirm we're still on the same chapter before painting.
-            if (prevIndexRef.current === idx) showFootprint(mapRef.current!, feature)
-          })
-          .catch(() => footprintCache.current.set(cacheKey, null))
-      })
+      map.once('moveend', () => showArrival(true))
     }
 
     if (to.longitude != null && to.latitude != null) prevLngLatRef.current = [to.longitude, to.latitude]
