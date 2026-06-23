@@ -36,6 +36,17 @@ function paperStyle(): StyleSpecification {
         },
       },
       { id: 'coast', type: 'line', source: 'omt', 'source-layer': 'water', paint: { 'line-color': PAL.coast, 'line-width': 0.7, 'line-opacity': 0.5, 'line-blur': 0.3 } },
+      // Country boundaries — no labels, just outlines to orient without cluttering.
+      {
+        id: 'country-lines', type: 'line', source: 'omt', 'source-layer': 'boundary',
+        filter: ['==', ['get', 'admin_level'], 2],
+        paint: {
+          'line-color': '#9aa0aa',
+          'line-width': ['interpolate', ['linear'], ['zoom'], 0, 0.6, 4, 0.9, 8, 1.1],
+          'line-opacity': ['interpolate', ['linear'], ['zoom'], 0, 0.7, 6, 0.55, 10, 0.3],
+          'line-dasharray': [3, 2],
+        },
+      },
       {
         id: 'roads', type: 'line', source: 'omt', 'source-layer': 'transportation', minzoom: 12,
         layout: { 'line-cap': 'round', 'line-join': 'round' },
