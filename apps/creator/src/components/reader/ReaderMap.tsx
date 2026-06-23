@@ -236,21 +236,12 @@ export function ReaderMap({ chapters, activeIndex, reducedMotion, onChapterClick
           activeMarker.getElement().appendChild(ripple)
           setTimeout(() => ripple.remove(), 1500)
         }
-        // Slow 13° bearing sweep reveals terrain depth.
-        map.easeTo({
-          bearing: map.getBearing() + 13,
-          duration: 3500,
-          easing: (t: number) => t < 0.5 ? 2*t*t : -1 + (4 - 2*t)*t,
-        })
       }
 
-      // Headline label above the active sphere.
-      const headline = chapter.headline || chapter.name
-      if (headline) {
-        const el = document.createElement('div')
-        el.className = 'loc-chapter-label'
-        el.textContent = headline
-        labelMarkerRef.current = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -18] })
+      // Image card (or text label fallback) anchored above the active sphere.
+      const el = makeArrivalCard(chapter)
+      if (el) {
+        labelMarkerRef.current = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -24] })
           .setLngLat([chapter.longitude, chapter.latitude])
           .addTo(map)
       }
@@ -310,6 +301,39 @@ export function ReaderMap({ chapters, activeIndex, reducedMotion, onChapterClick
   }, [activeIndex, chapters, ready, reducedMotion, mapRef])
 
   return <div ref={containerRef} className="h-full w-full" data-testid="reader-map" />
+}
+
+// Build the arrival card: image card if the chapter has a photo, text pill fallback.
+function makeArrivalCard(chapter: Chapter): HTMLDivElement | null {
+  const imageUrl = chapter.imageUrl
+  const label = chapter.name || chapter.headline
+
+  if (imageUrl) {
+    const card = document.createElement('div')
+    card.className = 'loc-image-card'
+
+    const img = document.createElement('img')
+    img.src = imageUrl
+    img.alt = label ?? ''
+    card.appendChild(img)
+
+    if (label) {
+      const cap = document.createElement('div')
+      cap.className = 'loc-image-card-caption'
+      cap.textContent = label
+      card.appendChild(cap)
+    }
+    return card
+  }
+
+  if (label) {
+    const pill = document.createElement('div')
+    pill.className = 'loc-chapter-label'
+    pill.textContent = chapter.headline || label
+    return pill
+  }
+
+  return null
 }
 
 // Set footprint GeoJSON and fade in the fill + stroke layers.
