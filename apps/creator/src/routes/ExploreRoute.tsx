@@ -60,7 +60,17 @@ export function ExploreRoute() {
 
       <div className="mx-auto max-w-5xl px-5 py-6">
         <h1 className="mb-1 text-2xl font-extrabold tracking-tight text-chalk">PlayceLists</h1>
-        <p className="mb-6 text-sm text-gray-mid">Spatial stories you can explore on the map.</p>
+        <p className="mb-4 text-sm text-gray-mid">Spatial stories you can explore on the map.</p>
+
+        <Link
+          to="/experience/access-failure"
+          className="mb-6 block overflow-hidden rounded-2xl border border-signal/40 bg-surface1 p-5 transition hover:border-signal"
+        >
+          <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-signal-pink">Spatial Scene · Prototype</div>
+          <div className="text-lg font-extrabold text-chalk">The Road to the Bridge Fails</div>
+          <p className="mt-1 text-sm text-gray-mid">Beat-driven map reveal — globe to street, real geography.</p>
+          <span className="mt-3 inline-block text-xs font-bold text-signal">Open experience →</span>
+        </Link>
 
         {error && <div className="mb-4 text-sm text-red-400">{error}</div>}
         {!stories && !error && <div className="text-sm text-gray-mid">Loading…</div>}
