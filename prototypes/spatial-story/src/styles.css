@@ -1,0 +1,323 @@
+@import 'tailwindcss';
+
+:root {
+  --ink: #05070b;
+  --paper: #0b0e14;
+  --panel: #0d1017;
+  --hair: rgba(231, 229, 228, 0.14);
+  --fog: #8b93a3;
+  --chalk: #e8e6e1;
+  --flood: #38cfe8;
+  --flood-deep: #0e7c96;
+  --storm: #8b97f5;
+  --fail: #ff5c38;
+  --warm: #ffce8a;
+  --acid: #d7f95c;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: #020304;
+  overscroll-behavior: none;
+}
+
+body {
+  font-family: 'Newsreader', Georgia, serif;
+  color: var(--chalk);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.font-display {
+  font-family: 'Fraunces', Georgia, serif;
+}
+.font-mono-ed {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+/* ---- phone shell ---- */
+.shell {
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  background: var(--ink);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+@media (min-width: 520px) and (min-height: 700px) {
+  .shell {
+    width: 400px;
+    height: min(860px, calc(100dvh - 48px));
+    border-radius: 34px;
+    border: 1px solid rgba(231, 229, 228, 0.16);
+    box-shadow:
+      0 0 0 8px #0a0c10,
+      0 40px 120px rgba(0, 0, 0, 0.9);
+  }
+}
+
+.maplibregl-map {
+  font: inherit;
+}
+.maplibregl-ctrl-attrib {
+  background: transparent !important;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px !important;
+  opacity: 0.5;
+}
+.maplibregl-ctrl-attrib a {
+  color: #6b7280 !important;
+}
+
+/* ---- editorial scrims over the map ---- */
+.map-vignette {
+  background:
+    radial-gradient(120% 90% at 50% 40%, transparent 55%, rgba(2, 3, 5, 0.55) 100%),
+    linear-gradient(to bottom, rgba(2, 3, 5, 0.55), transparent 22%),
+    linear-gradient(to top, rgba(5, 7, 11, 0.9), transparent 30%);
+}
+
+/* ---- story panel ---- */
+.story-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  scrollbar-width: none;
+  /* vertical pans stay native; horizontal pans reach the swipe track */
+  touch-action: pan-y;
+}
+.story-scroll::-webkit-scrollbar {
+  display: none;
+}
+.body-copy p {
+  font-size: 16.5px;
+  line-height: 1.72;
+  font-weight: 400;
+  color: #d8d5cf;
+  margin: 0 0 1.15em;
+  letter-spacing: 0.002em;
+}
+.body-copy p:last-child {
+  margin-bottom: 0;
+}
+.body-copy p::first-letter {
+  letter-spacing: 0;
+}
+
+/* ================= SVG actor animation language ================= */
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+}
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.72;
+  }
+}
+@keyframes ring-pulse {
+  0% {
+    transform: scale(0.4);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.1);
+    opacity: 0;
+  }
+}
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes spin-slower {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+@keyframes draw-in {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes dash-flow {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes dash-flow-px {
+  from {
+    stroke-dashoffset: 48;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes warn-flash {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes bloom-in {
+  from {
+    opacity: 0;
+    filter: blur(14px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0px);
+  }
+}
+@keyframes ring-close {
+  from {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes glow-throb {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.tb-fill {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.anim-pulse-soft {
+  animation: pulse-soft 3.4s ease-in-out infinite;
+}
+.anim-breathe {
+  animation: breathe 5.5s ease-in-out infinite;
+}
+.anim-ring-pulse {
+  animation: ring-pulse 2.8s ease-out infinite;
+}
+.anim-spin-slow {
+  animation: spin-slow 26s linear infinite;
+}
+.anim-spin-slower {
+  animation: spin-slower 40s linear infinite;
+}
+.anim-warn {
+  animation: warn-flash 1.1s ease-in-out infinite;
+}
+.anim-glow-throb {
+  animation: glow-throb 3s ease-in-out infinite;
+}
+
+/* solid lines draw themselves in; pathLength=1 normalises units */
+.anim-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw-in 1.7s cubic-bezier(0.5, 0, 0.2, 1) forwards;
+  animation-delay: var(--d, 0s);
+}
+/* directional flow along a normalised path (surge arrows, boat) */
+.anim-flow {
+  animation: dash-flow 3.2s linear infinite;
+}
+.anim-flow-slow {
+  animation: dash-flow 6.5s linear infinite;
+}
+.anim-fade-up {
+  opacity: 0;
+  animation: fade-up 0.9s ease-out forwards;
+  animation-delay: var(--d, 0s);
+}
+.anim-bloom {
+  animation: bloom-in 2.2s ease-out forwards;
+}
+.anim-ring-close {
+  animation: ring-close 2.4s cubic-bezier(0.3, 0, 0.2, 1) forwards;
+}
+
+/* cut-to-black transition flash on scene commit — a camera cut */
+.shutter-flash {
+  background: radial-gradient(120% 90% at 50% 45%, rgba(125, 227, 245, 0.24), transparent 62%);
+  animation: shutter 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  mix-blend-mode: screen;
+}
+@keyframes shutter {
+  0% {
+    opacity: 0;
+  }
+  14% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* touch ripple */
+.ripple-ping {
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  margin-top: -5px;
+  background: rgba(56, 207, 232, 0.32);
+  animation: ripple-expand 0.7s ease-out forwards;
+}
+@keyframes ripple-expand {
+  from {
+    transform: scale(0);
+    opacity: 0.6;
+  }
+  to {
+    transform: scale(24);
+    opacity: 0;
+  }
+}
+
+.map-label {
+  font-family: 'IBM Plex Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  paint-order: stroke;
+  stroke: rgba(3, 5, 8, 0.85);
+  stroke-width: 3px;
+  user-select: none;
+}
