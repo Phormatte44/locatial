@@ -14,7 +14,7 @@ type Props = {
 
 export function SpatialMapStage({ resolved, beatIndex, reducedMotion, onMapReady }: Props) {
   const cam = resolved.camera
-  const { containerRef, mapRef, ready } = useMaplibre({
+  const { containerRef, mapRef, ready, mapError } = useMaplibre({
     center: cam.center,
     zoom: cam.zoom,
     interactive: true,
@@ -74,10 +74,17 @@ export function SpatialMapStage({ resolved, beatIndex, reducedMotion, onMapReady
     <div className="relative h-full min-h-[240px] w-full overflow-hidden bg-paper">
       <div ref={containerRef} className="absolute inset-0 h-full w-full" />
 
-      {!ready && (
+      {!ready && !mapError && (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-paper text-stone">
           <div className="h-2 w-2 animate-pulse rounded-full bg-signal-pink" />
           <span className="text-xs font-bold">Loading map…</span>
+        </div>
+      )}
+
+      {mapError && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-paper p-4 text-center text-stone">
+          <span className="text-xs font-bold text-[#ff6b35]">Map could not load</span>
+          <span className="max-w-xs text-[11px]">{mapError}</span>
         </div>
       )}
 

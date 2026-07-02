@@ -120,37 +120,43 @@ export function useMaplibre(opts?: {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const [ready, setReady] = useState(false)
+  const [mapError, setMapError] = useState<string | null>(null)
 
   useEffect(() => {
     const container = containerRef.current
     if (!container || mapRef.current) return
 
-    // Paper white behind the globe — shows through the canvas before sky paints.
     container.style.background = '#edeff1'
 
-    const map = new maplibregl.Map({
-      container,
-      style: paperStyle(),
-      center: opts?.center ?? [-0.1278, 51.5074],
-      zoom: opts?.zoom ?? 12,
-      pitch: 0,      // start flat; cameraDirector sets pitch when flying to chapters
-      bearing: 0,
-      interactive: opts?.interactive ?? true,
-      attributionControl: false,
-      canvasContextAttributes: { antialias: true },
-    })
+    let map: maplibregl.Map
+    try {
+      map = new maplibregl.Map({
+        container,
+        style: paperStyle(),
+        center: opts?.center ?? [-0.1278, 51.5074],
+        zoom: opts?.zoom ?? 12,
+        pitch: 0,
+        bearing: 0,
+        maxPitch: 85,
+        interactive: opts?.interactive ?? true,
+        attributionControl: false,
+        canvasContextAttributes: { antialias: true },
+      })
+    } catch (e) {
+      setMapError(e instanceof Error ? e.message : 'Map failed to initialize')
+      return
+    }
     mapRef.current = map
 
-    // Flip `ready` as soon as the map is usable (markers + camera only need the
-    // style, not a full render). We listen on several signals because the `load`
-    // event can be MISSED when the map mounts inside a 0-height container — the
-    // Reader's percentage-height panel is collapsed on first paint, which left
-    // the map blank forever (no tiles, no markers). `styledata` + isStyleLoaded
-    // fires reliably once the style JSON is parsed, independent of rendering.
     const markReady = () => setReady(true)
     const onStyle = () => {
       if (map.isStyleLoaded()) markReady()
     }
+    const onMapError = (e: maplibregl.ErrorEvent) => {
+      console.error('[MapLibre]', e.error)
+      setMapError(e.error?.message ?? 'Map tile error')
+    }
+    map.on('error', onMapError)
     map.on('style.load', () => applyPostLoadLayers(map))
     map.on('load', markReady)
     map.on('idle', markReady)
@@ -171,6 +177,7 @@ export function useMaplibre(opts?: {
       map.off('load', markReady)
       map.off('idle', markReady)
       map.off('styledata', onStyle)
+      map.off('error', onMapError)
       map.remove()
       mapRef.current = null
       setReady(false)
@@ -178,7 +185,7 @@ export function useMaplibre(opts?: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  return { containerRef, mapRef, ready }
+  return { containerRef, mapRef, ready, mapError }
 }
 
 /** Studio pillar pin — label + stem for the creator map. */

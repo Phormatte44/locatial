@@ -6,6 +6,7 @@ import { ReaderRoute } from './ReaderRoute'
 import { ExploreRoute } from './ExploreRoute'
 import { ExperienceRoute } from './ExperienceRoute'
 import { DirectorRoute } from './DirectorRoute'
+import { NotFoundPage, RouteErrorPage } from './ErrorPages'
 import { RequireAuth } from '../components/auth/RequireAuth'
 
 function StudioRoute() {
@@ -19,15 +20,19 @@ function PreviewRoute() {
 }
 
 export const router = createBrowserRouter([
-  // Public citizen surfaces — no login. Home is the browse experience.
-  { path: '/', element: <ExploreRoute /> },
-  { path: '/story/:slug', element: <ReaderRoute /> },
-  { path: '/experience/access-failure', element: <ExperienceRoute /> },
-  { path: '/scene', element: <ExperienceRoute /> },
-  { path: '/director', element: <DirectorRoute /> },
-  { path: '/explore', element: <Navigate to="/" replace /> },
-  // Creator Studio (create/edit) requires sign-in, under /studio.
-  { path: '/studio', element: <RequireAuth><StoryListRoute /></RequireAuth> },
-  { path: '/studio/:storyId', element: <RequireAuth><StudioRoute /></RequireAuth> },
-  { path: '/studio/:storyId/preview', element: <RequireAuth><PreviewRoute /></RequireAuth> },
+  {
+    errorElement: <RouteErrorPage />,
+    children: [
+      { path: '/', element: <ExploreRoute /> },
+      { path: '/story/:slug', element: <ReaderRoute /> },
+      { path: '/experience/access-failure', element: <ExperienceRoute /> },
+      { path: '/scene', element: <ExperienceRoute /> },
+      { path: '/director', element: <DirectorRoute /> },
+      { path: '/explore', element: <Navigate to="/" replace /> },
+      { path: '/studio', element: <RequireAuth><StoryListRoute /></RequireAuth> },
+      { path: '/studio/:storyId', element: <RequireAuth><StudioRoute /></RequireAuth> },
+      { path: '/studio/:storyId/preview', element: <RequireAuth><PreviewRoute /></RequireAuth> },
+      { path: '*', element: <NotFoundPage /> },
+    ],
+  },
 ])
