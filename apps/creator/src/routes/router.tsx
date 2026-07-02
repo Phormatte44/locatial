@@ -5,6 +5,7 @@ import { PreviewWorkspace } from '../components/studio/PreviewWorkspace'
 import { ReaderRoute } from './ReaderRoute'
 import { ExploreRoute } from './ExploreRoute'
 import { ExperienceRoute } from './ExperienceRoute'
+import { DirectorRoute } from './DirectorRoute'
 import { RequireAuth } from '../components/auth/RequireAuth'
 
 function StudioRoute() {
@@ -23,6 +24,7 @@ export const router = createBrowserRouter([
   { path: '/story/:slug', element: <ReaderRoute /> },
   { path: '/experience/access-failure', element: <ExperienceRoute /> },
   { path: '/scene', element: <ExperienceRoute /> },
+  { path: '/director', element: <DirectorRoute /> },
   { path: '/explore', element: <Navigate to="/" replace /> },
   // Creator Studio (create/edit) requires sign-in, under /studio.
   { path: '/studio', element: <RequireAuth><StoryListRoute /></RequireAuth> },

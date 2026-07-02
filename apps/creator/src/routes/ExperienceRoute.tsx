@@ -16,7 +16,9 @@ export function ExperienceRoute() {
           <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-signal-pink">Scene 07</div>
           <div className="text-xs font-extrabold text-chalk">Access Failure</div>
         </div>
-        <div className="w-16" />
+        <Link to="/director" className="text-xs font-bold text-signal hover:text-signal-pink">
+          Director →
+        </Link>
       </header>
 
       <main className="mx-auto min-h-0 w-full max-w-lg flex-1">

@@ -9,9 +9,10 @@ type Props = {
   resolved: ResolvedBeat
   beatIndex: number
   reducedMotion?: boolean
+  onMapReady?: (map: Map) => void
 }
 
-export function SpatialMapStage({ resolved, beatIndex, reducedMotion }: Props) {
+export function SpatialMapStage({ resolved, beatIndex, reducedMotion, onMapReady }: Props) {
   const cam = resolved.camera
   const { containerRef, mapRef, ready } = useMaplibre({
     center: cam.center,
@@ -26,6 +27,7 @@ export function SpatialMapStage({ resolved, beatIndex, reducedMotion }: Props) {
     if (!ready || !mapRef.current) return
     const map = mapRef.current
     setMapInstance(map)
+    onMapReady?.(map)
     map.setMaxPitch(85)
     requestAnimationFrame(() => {
       map.resize()
@@ -37,7 +39,7 @@ export function SpatialMapStage({ resolved, beatIndex, reducedMotion }: Props) {
       })
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, mapRef])
+  }, [ready, mapRef, onMapReady])
 
   useEffect(() => {
     const map = mapRef.current

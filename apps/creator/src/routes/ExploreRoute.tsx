@@ -21,6 +21,9 @@ function MenuButton() {
           <Link to="/" className="block px-4 py-2.5 text-sm font-semibold text-chalk hover:bg-surface2" onClick={() => setOpen(false)}>
             Browse PlayceLists
           </Link>
+          <Link to="/director" className="block px-4 py-2.5 text-sm font-semibold text-chalk hover:bg-surface2" onClick={() => setOpen(false)}>
+            Spatial Director →
+          </Link>
           <Link to="/studio" className="block px-4 py-2.5 text-sm font-semibold text-chalk hover:bg-surface2" onClick={() => setOpen(false)}>
             Creator Studio →
           </Link>
@@ -50,12 +53,20 @@ export function ExploreRoute() {
       <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-gray-rule bg-night/95 px-5 py-3 backdrop-blur">
         <MenuButton />
         <div className="text-lg font-extrabold uppercase tracking-[0.35em] text-chalk">LOCATIAL</div>
+        <div className="ml-auto flex items-center gap-2">
+        <Link
+          to="/director"
+          className="rounded-lg border border-gray-rule px-3 py-2 text-xs font-bold text-chalk hover:border-signal"
+        >
+          Director →
+        </Link>
         <Link
           to="/studio"
-          className="ml-auto rounded-lg bg-signal px-3 py-2 text-xs font-bold text-white hover:brightness-110"
+          className="rounded-lg bg-signal px-3 py-2 text-xs font-bold text-white hover:brightness-110"
         >
           Creator Studio →
         </Link>
+        </div>
       </header>
 
       <div className="mx-auto max-w-5xl px-5 py-6">
@@ -70,6 +81,16 @@ export function ExploreRoute() {
           <div className="text-lg font-extrabold text-chalk">The Road to the Bridge Fails</div>
           <p className="mt-1 text-sm text-gray-mid">Beat-driven map reveal — globe to street, real geography.</p>
           <span className="mt-3 inline-block text-xs font-bold text-signal">Open experience →</span>
+        </Link>
+
+        <Link
+          to="/director"
+          className="mb-4 block overflow-hidden rounded-2xl border border-gray-rule bg-surface1 p-4 transition hover:border-signal"
+        >
+          <div className="text-[10px] font-bold uppercase tracking-[0.25em] text-gray-mid">Spatial Director · V0</div>
+          <div className="text-base font-extrabold text-chalk">Direct Scene 07</div>
+          <p className="mt-1 text-sm text-gray-mid">Timeline, camera capture, preview, JSON export.</p>
+          <span className="mt-2 inline-block text-xs font-bold text-signal">Open Director →</span>
         </Link>
 
         {error && <div className="mb-4 text-sm text-red-400">{error}</div>}
