@@ -1,9 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, animate, motion, type MotionValue } from 'framer-motion'
 import { SCENES, STORY, type Beat, type Scene } from '../data/scenes'
+import { Odometer } from './Odometer'
+import { useRipple } from './Ripple'
+import { EASE_EDITORIAL, SPRING_SNAP, SPRING_SOFT } from '../lib/motion'
 
 const SWIPE_DIST = 70
 const SWIPE_VELOCITY = 420
+const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
 
 type Props = {
   index: number
@@ -13,9 +17,10 @@ type Props = {
   hintVisible: boolean
   onFirstGesture: () => void
   onReadProgress: (r: number) => void
+  dragProgress: MotionValue<number>
 }
 
-export function StoryPanel({ index, beat, onNavigate, onBeat, hintVisible, onFirstGesture, onReadProgress }: Props) {
+export function StoryPanel({ index, beat, onNavigate, onBeat, hintVisible, onFirstGesture, onReadProgress, dragProgress }: Props) {
   const frameRef = useRef<HTMLDivElement>(null)
   const cardRefs = useRef<(HTMLDivElement | null)[]>([])
   const [width, setWidth] = useState(0)
@@ -75,15 +80,32 @@ export function StoryPanel({ index, beat, onNavigate, onBeat, hintVisible, onFir
 
   return (
     <div ref={frameRef} className="relative flex-1 overflow-hidden" style={{ background: 'var(--paper)' }}>
-      {/* chapter progress: segmented rail + index */}
+      {/* chapter progress: tick rail + a live index the map's cut echoes */}
       <div className="absolute left-0 right-0 top-0 z-20 flex items-center gap-3 px-5 pt-3 pb-2" style={{ background: 'linear-gradient(to bottom, var(--paper) 78%, transparent)' }}>
-        <div className="flex flex-1 gap-1">
+        <div className="flex flex-1 items-center gap-1">
           {SCENES.map((_, i) => (
-            <div key={i} className="h-[2px] flex-1 rounded-full transition-colors duration-500" style={{ background: i <= index ? 'var(--chalk)' : 'rgba(231,229,228,0.15)' }} />
+            <div key={i} className="relative h-[3px] flex-1 overflow-hidden rounded-full" style={{ background: 'rgba(231,229,228,0.14)' }}>
+              <motion.div
+                className="absolute inset-0 rounded-full"
+                style={{ background: 'var(--chalk)' }}
+                initial={false}
+                animate={{ scaleX: i <= index ? 1 : 0 }}
+                transition={{ duration: 0.6, ease: EASE_EDITORIAL }}
+              />
+              {i === index && (
+                <motion.div
+                  className="absolute inset-0 rounded-full"
+                  style={{ background: 'var(--flood)', filter: 'blur(3px)' }}
+                  animate={{ opacity: [0.4, 0.9, 0.4] }}
+                  transition={{ repeat: Infinity, duration: 2.4, ease: 'easeInOut' }}
+                />
+              )}
+            </div>
           ))}
         </div>
-        <div className="font-mono-ed text-[10px] tracking-[0.2em]" style={{ color: 'var(--fog)' }}>
-          {SCENES[index].num} / {String(SCENES.length)}
+        <div className="font-mono-ed flex items-baseline text-[10px] tracking-[0.2em]" style={{ color: 'var(--fog)' }}>
+          <Odometer value={SCENES[index].num} style={{ color: 'var(--chalk)' }} />
+          <span>&nbsp;/&nbsp;{String(SCENES.length)}</span>
         </div>
       </div>
 
@@ -97,10 +119,22 @@ export function StoryPanel({ index, beat, onNavigate, onBeat, hintVisible, onFir
           dragDirectionLock
           dragConstraints={{ left: -(SCENES.length - 1) * width, right: 0 }}
           animate={{ x: -index * width - peek }}
-          transition={{ type: 'spring', stiffness: 210, damping: 28 }}
+          transition={SPRING_SNAP}
+          onDrag={(_, info) => {
+            dragProgress.set(clamp(info.offset.x / width, -1, 1))
+          }}
           onDragEnd={(_, info) => {
-            if (info.offset.x < -SWIPE_DIST || info.velocity.x < -SWIPE_VELOCITY) go(index + 1)
-            else if (info.offset.x > SWIPE_DIST || info.velocity.x > SWIPE_VELOCITY) go(index - 1)
+            const advancing = info.offset.x < -SWIPE_DIST || info.velocity.x < -SWIPE_VELOCITY
+            const receding = info.offset.x > SWIPE_DIST || info.velocity.x > SWIPE_VELOCITY
+            if (advancing || receding) {
+              // a flyTo is about to start — zero instantly so no lingering
+              // spring tick can fight the camera mid-flight
+              dragProgress.set(0)
+            } else {
+              animate(dragProgress, 0, SPRING_SOFT)
+            }
+            if (advancing) go(index + 1)
+            else if (receding) go(index - 1)
             else onNavigate(index) // snap back
           }}
         >
@@ -148,6 +182,9 @@ function Chapter({ scene, i, onNext, onRestart }: { scene: Scene; i: number; onN
   const isFirst = i === 0
   const isLast = i === SCENES.length - 1
   const next = SCENES[i + 1]
+  const nextRipple = useRipple()
+  const restartRipple = useRipple()
+
   return (
     <div className="px-6 pb-10 pt-12">
       {isFirst && (
@@ -179,22 +216,43 @@ function Chapter({ scene, i, onNext, onRestart }: { scene: Scene; i: number; onN
 
       <div className="body-copy">
         {scene.body.map((p, k) => (
-          <p key={k}>{p}</p>
+          <motion.p
+            key={k}
+            initial={{ opacity: 0, y: 16, filter: 'blur(5px)' }}
+            whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            viewport={{ once: true, amount: 0.4 }}
+            transition={{ duration: 0.7, ease: EASE_EDITORIAL }}
+          >
+            {p}
+          </motion.p>
         ))}
       </div>
 
-      <div className="mt-8 border-l-2 pl-4" style={{ borderColor: 'rgba(56,207,232,0.5)' }}>
+      <motion.div
+        className="mt-8 border-l-2 pl-4"
+        style={{ borderColor: 'rgba(56,207,232,0.5)' }}
+        initial={{ opacity: 0, y: 12 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.6 }}
+        transition={{ duration: 0.6, ease: EASE_EDITORIAL }}
+      >
         <div className="font-mono-ed mb-1 text-[8.5px] tracking-[0.25em] uppercase" style={{ color: 'var(--fog)' }}>
           Map insight
         </div>
         <div className="font-display text-[15px] italic" style={{ color: '#bfe9f2' }}>
           {scene.mapSentence}
         </div>
-      </div>
+      </motion.div>
 
       {/* end-of-chapter cue */}
       {!isLast && next && (
-        <button onClick={onNext} className="mt-10 block w-full border-t pt-5 text-left" style={{ borderColor: 'var(--hair)' }}>
+        <button
+          onClick={onNext}
+          onPointerDown={nextRipple.onPointerDown}
+          className="relative mt-10 block w-full overflow-hidden border-t pt-5 text-left active:opacity-80"
+          style={{ borderColor: 'var(--hair)' }}
+        >
+          {nextRipple.layer}
           <div className="font-mono-ed mb-1.5 text-[8.5px] tracking-[0.25em] uppercase" style={{ color: 'var(--fog)' }}>
             Next spatial beat
           </div>
@@ -219,7 +277,13 @@ function Chapter({ scene, i, onNext, onRestart }: { scene: Scene; i: number; onN
             <br />
             The place was revealed.
           </p>
-          <button onClick={onRestart} className="font-mono-ed mt-7 rounded-full border px-5 py-2.5 text-[9.5px] tracking-[0.25em] uppercase" style={{ borderColor: 'var(--hair)', color: 'var(--fog)' }}>
+          <button
+            onClick={onRestart}
+            onPointerDown={restartRipple.onPointerDown}
+            className="font-mono-ed relative mt-7 overflow-hidden rounded-full border px-5 py-2.5 text-[9.5px] tracking-[0.25em] uppercase active:opacity-80"
+            style={{ borderColor: 'var(--hair)', color: 'var(--fog)' }}
+          >
+            {restartRipple.layer}
             ↺ Read it again
           </button>
           <div className="font-mono-ed mt-6 text-[8px] tracking-[0.18em] uppercase" style={{ color: '#4b5261' }}>

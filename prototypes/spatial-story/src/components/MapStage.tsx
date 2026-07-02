@@ -16,7 +16,7 @@ const FALLBACK_STYLE = {
   layers: [{ id: 'bg', type: 'background' as const, paint: { 'background-color': '#0b0f16' } }],
 }
 
-export function MapStage({ onMap }: { onMap: (m: MLMap) => void }) {
+export function MapStage({ onMap, onReady }: { onMap: (m: MLMap) => void; onReady?: () => void }) {
   const ref = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MLMap | null>(null)
 
@@ -46,6 +46,7 @@ export function MapStage({ onMap }: { onMap: (m: MLMap) => void }) {
     })
     mapRef.current = map
     onMap(map)
+    map.once('load', () => onReady?.())
 
     const ro = new ResizeObserver(() => map.resize())
     ro.observe(ref.current)

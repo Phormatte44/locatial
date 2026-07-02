@@ -274,6 +274,44 @@ body {
   animation: ring-close 2.4s cubic-bezier(0.3, 0, 0.2, 1) forwards;
 }
 
+/* cut-to-black transition flash on scene commit — a camera cut */
+.shutter-flash {
+  background: radial-gradient(120% 90% at 50% 45%, rgba(125, 227, 245, 0.24), transparent 62%);
+  animation: shutter 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  mix-blend-mode: screen;
+}
+@keyframes shutter {
+  0% {
+    opacity: 0;
+  }
+  14% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* touch ripple */
+.ripple-ping {
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  margin-top: -5px;
+  background: rgba(56, 207, 232, 0.32);
+  animation: ripple-expand 0.7s ease-out forwards;
+}
+@keyframes ripple-expand {
+  from {
+    transform: scale(0);
+    opacity: 0.6;
+  }
+  to {
+    transform: scale(24);
+    opacity: 0;
+  }
+}
+
 .map-label {
   font-family: 'IBM Plex Mono', monospace;
   text-transform: uppercase;
