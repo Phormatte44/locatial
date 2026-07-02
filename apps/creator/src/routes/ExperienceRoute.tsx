@@ -7,14 +7,21 @@ export function ExperienceRoute() {
   const scene = getAccessFailureScene()
 
   return (
-    <div className="relative mx-auto h-screen max-w-lg bg-night">
-      <Link
-        to="/"
-        className="absolute left-1/2 top-2 z-30 -translate-x-1/2 rounded-full border border-gray-rule bg-night/90 px-3 py-1 text-[11px] font-bold text-chalk shadow-lg backdrop-blur hover:border-signal"
-      >
-        ☰ Locatial
-      </Link>
-      <SpatialScenePlayer story={ACCESS_FAILURE_STORY} scene={scene} />
+    <div className="flex h-[100dvh] w-full flex-col bg-night">
+      <header className="relative z-40 flex shrink-0 items-center justify-between border-b border-gray-rule bg-night px-4 py-2.5">
+        <Link to="/" className="text-xs font-bold text-gray-mid hover:text-signal">
+          ← Locatial
+        </Link>
+        <div className="text-center">
+          <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-signal-pink">Scene 07</div>
+          <div className="text-xs font-extrabold text-chalk">Access Failure</div>
+        </div>
+        <div className="w-16" />
+      </header>
+
+      <main className="mx-auto min-h-0 w-full max-w-lg flex-1">
+        <SpatialScenePlayer story={ACCESS_FAILURE_STORY} scene={scene} showChrome={false} className="h-full" />
+      </main>
     </div>
   )
 }

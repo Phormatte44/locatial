@@ -22,6 +22,7 @@ export const router = createBrowserRouter([
   { path: '/', element: <ExploreRoute /> },
   { path: '/story/:slug', element: <ReaderRoute /> },
   { path: '/experience/access-failure', element: <ExperienceRoute /> },
+  { path: '/scene', element: <ExperienceRoute /> },
   { path: '/explore', element: <Navigate to="/" replace /> },
   // Creator Studio (create/edit) requires sign-in, under /studio.
   { path: '/studio', element: <RequireAuth><StoryListRoute /></RequireAuth> },

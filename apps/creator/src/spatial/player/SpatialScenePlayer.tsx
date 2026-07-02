@@ -21,15 +21,10 @@ function usePrefersReducedMotion(): boolean {
 type Props = {
   story: SpatialStory
   scene: SpatialScene
-  /** Optional title overlay on the map stage */
   showChrome?: boolean
   className?: string
 }
 
-/**
- * Shared spatial scene player — used by public experience and Studio preview.
- * Map/globe stage on top (~58%), editorial story panel below (~42%).
- */
 export function SpatialScenePlayer({ story, scene, showChrome = true, className = '' }: Props) {
   const [beatIndex, setBeatIndex] = useState(0)
   const reducedMotion = usePrefersReducedMotion()
@@ -62,18 +57,22 @@ export function SpatialScenePlayer({ story, scene, showChrome = true, className 
   }, [next, prev])
 
   if (!resolved) {
-    return <div className="flex h-full items-center justify-center bg-night text-sm text-gray-mid">Scene unavailable.</div>
+    return (
+      <div className="flex h-full min-h-[50vh] items-center justify-center bg-night p-6 text-center text-sm text-gray-mid">
+        Scene unavailable.
+      </div>
+    )
   }
 
   return (
-    <div className={`flex h-full flex-col ${className}`} data-testid="spatial-scene-player">
-      {/* Map stage — globe-capable MapLibre, cinematic camera per beat */}
-      <div className="relative min-h-0 shrink-0" style={{ height: '58%' }}>
+    <div className={`flex h-full min-h-0 flex-col ${className}`} data-testid="spatial-scene-player">
+      {/* Map stage — flex basis keeps height even when parent chain is imperfect */}
+      <div className="relative flex min-h-[45vh] flex-[1.45] flex-col">
         <SpatialMapStage resolved={resolved} beatIndex={beatIndex} reducedMotion={reducedMotion} />
 
         {showChrome && (
-          <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-3">
-            <div className="max-w-[70%] rounded-lg bg-night/80 px-3 py-2 backdrop-blur-sm">
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between p-3 pt-12">
+            <div className="max-w-[85%] rounded-lg bg-night/85 px-3 py-2 backdrop-blur-sm">
               <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-signal-pink">Spatial Scene</div>
               <div className="text-sm font-extrabold text-chalk">{scene.title}</div>
               <div className="mt-0.5 text-[11px] text-gray-lo">{scene.mapSentence}</div>
@@ -81,13 +80,13 @@ export function SpatialScenePlayer({ story, scene, showChrome = true, className 
           </div>
         )}
 
-        <div className="pointer-events-auto absolute inset-x-0 bottom-0">
+        <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-30 pb-1">
           <BeatScrubber beats={beats} activeIndex={beatIndex} onSelect={go} />
         </div>
       </div>
 
-      {/* Editorial story panel */}
-      <div className="min-h-0 flex-1">
+      {/* Editorial story panel — always visible */}
+      <div className="flex min-h-[180px] flex-1 flex-col border-t border-paper-rule">
         <StoryPanel
           beat={resolved.beat}
           beatIndex={beatIndex}

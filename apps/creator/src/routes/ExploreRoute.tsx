@@ -63,8 +63,8 @@ export function ExploreRoute() {
         <p className="mb-4 text-sm text-gray-mid">Spatial stories you can explore on the map.</p>
 
         <Link
-          to="/experience/access-failure"
-          className="mb-6 block overflow-hidden rounded-2xl border border-signal/40 bg-surface1 p-5 transition hover:border-signal"
+          to="/scene"
+          className="mb-6 block overflow-hidden rounded-2xl border-2 border-signal bg-surface1 p-5 transition hover:border-signal-pink"
         >
           <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-signal-pink">Spatial Scene · Prototype</div>
           <div className="text-lg font-extrabold text-chalk">The Road to the Bridge Fails</div>
